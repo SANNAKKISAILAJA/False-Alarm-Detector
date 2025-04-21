@@ -5,12 +5,13 @@ import com.example.False.Alarm.model.User;
 import com.example.False.Alarm.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/users")
@@ -18,10 +19,13 @@ public class UserController {
     @Autowired
     UserService userService;
 
+    @Value("{project.image}")
+    private String path;
+
     @PostMapping("/user")
-    public ResponseEntity<User> addUser(@RequestBody @Valid AddUserRequest addUserRequest){
-        User addedUser = userService.addUser(addUserRequest);
-        return new ResponseEntity<>(addedUser, HttpStatus.CREATED);
+    public ResponseEntity<?> addUser(@ModelAttribute @Valid AddUserRequest addUserRequest) throws IOException {
+        ResponseEntity<?> response = userService.addUser(path,addUserRequest);
+        return response;
 
     }
 
@@ -31,4 +35,5 @@ public class UserController {
         return new ResponseEntity<>(addedUser, HttpStatus.CREATED);
 
     }
+
 }
