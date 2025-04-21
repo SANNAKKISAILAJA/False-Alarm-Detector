@@ -38,6 +38,9 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     UserType userType; //ADMIN, USER
 
+    @Column(length = 512)
+    String profilePicUrl;
+
     @Builder.Default
     Boolean isEnabled = false;
 
