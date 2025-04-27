@@ -1,0 +1,41 @@
+/* Reset some default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Set a nice font and smooth background */
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: #f8fafc;
+  color: #333;
+  min-height: 100vh;
+}
+
+/* Make buttons look consistent */
+button {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+/* Make inputs nice */
+input {
+  font-family: inherit;
+  font-size: 16px;
+  outline: none;
+}
+
+/* Simple link style */
+.link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Center everything (optional, depending on your components) */
+.app-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
