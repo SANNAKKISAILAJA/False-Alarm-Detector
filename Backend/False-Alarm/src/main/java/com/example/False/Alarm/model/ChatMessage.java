@@ -24,5 +24,5 @@ public class ChatMessage{
 
         @ManyToOne
         @JoinColumn(name = "conversation_id")
-        Conversation conversationId;
+        Conversation conversation;
 }
