@@ -1,6 +1,7 @@
 package com.example.False.Alarm.service;
 
 import com.example.False.Alarm.dto.AddUserRequest;
+import com.example.False.Alarm.dto.UserSearchDTO;
 import com.example.False.Alarm.enums.UserType;
 import com.example.False.Alarm.mapper.UserMapper;
 import com.example.False.Alarm.model.User;
@@ -17,7 +18,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -72,6 +75,14 @@ public class UserService {
 //        user.setAuthorities("ADMIN");   //uncomment when added security
 
         return userRepository.save(user);
+    }
+
+    public List<User> searchByUsername(String query) {
+        return userRepository.findByUsernameContainingIgnoreCase(query);
+    }
+
+    public List<User> searchByUserId(String query) {
+        return userRepository.findByUserIdContainingIgnoreCase(query);
     }
 
 }
