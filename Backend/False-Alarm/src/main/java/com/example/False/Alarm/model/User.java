@@ -2,6 +2,7 @@ package com.example.False.Alarm.model;
 
 import com.example.False.Alarm.enums.ObservationStatus;
 import com.example.False.Alarm.enums.UserType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Data
@@ -40,6 +42,15 @@ public class User {
 
     @Column(length = 512)
     String profilePicUrl;
+
+    @OneToMany(mappedBy = "sender")
+    @JsonIgnore
+    List<Match> sentMatches;
+
+    @OneToMany(mappedBy = "receiver")
+    @JsonIgnore
+    List<Match> receivedMatches;
+
 
     @Builder.Default
     Boolean isEnabled = false;
