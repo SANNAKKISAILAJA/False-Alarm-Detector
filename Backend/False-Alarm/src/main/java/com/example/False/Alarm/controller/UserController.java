@@ -53,5 +53,17 @@ public class UserController {
         return ResponseEntity.ok(chatMonitorService.resetCounts(userId));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(@RequestParam("query") String query) {
+        List<User> usersByName = userService.searchByUsername(query);
+        List<User> usersById = userService.searchByUserId(query);
+
+        // Combine both and remove duplicates if any
+        Set<User> combined = new LinkedHashSet<>();
+        combined.addAll(usersByName);
+        combined.addAll(usersById);
+
+        return ResponseEntity.ok(new ArrayList<>(combined));
+    }
 
 }
