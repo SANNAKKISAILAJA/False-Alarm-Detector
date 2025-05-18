@@ -7,7 +7,6 @@ export default function SignupForm({ onDone }) {
     <form style={form}>
       <h3 style={{ marginBottom: 16 }}>Create an account</h3>
       <input placeholder="Username" style={input} />
-      <input placeholder="Userid" style={input} />
       <input placeholder="Email" type="email" style={input} />
       <input placeholder="Password" type="password" style={input} />
       <input type="file" style={input} />
