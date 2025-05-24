@@ -9,23 +9,52 @@ import Background from "./Background";
 
 function App() {
   const [screen, setScreen] = useState("landing");
+  const [prevScreen, setPrevScreen] = useState(null);
+
+  // Helper to change screens and remember the previous one
+  const navigate = (nextScreen) => {
+    setPrevScreen(screen);
+    setScreen(nextScreen);
+  };
+
+  // Go back to the previous screen
+  const goToPrevious = () => {
+    if (prevScreen) {
+      setScreen(prevScreen);
+      setPrevScreen(null); // Optional: clear after going back
+    }
+  };
 
   return (
-    <Background>
+    <Background
+      screen={screen}
+      onGoPrevious={prevScreen ? goToPrevious : null}
+    >
       {screen === "landing" && (
-        <AuthLanding onSignup={() => setScreen("signup")} onSignin={() => setScreen("login")} />
+        <AuthLanding
+          onSignup={() => navigate("signup")}
+          onSignin={() => navigate("login")}
+        />
       )}
       {screen === "signup" && (
-        <SignupForm onDone={() => setScreen("login")} />
+        <SignupForm
+          onDone={() => navigate("login")}
+        />
       )}
       {screen === "login" && (
-        <LoginForm onDone={() => setScreen("invite")} />
+        <LoginForm
+          onDone={() => navigate("invite")}
+        />
       )}
       {screen === "invite" && (
-        <ChatInvite onGoToChat={() => setScreen("chat")} />
+        <ChatInvite
+          onGoToChat={() => navigate("chat")}
+        />
       )}
       {screen === "chat" && (
-        <ChatList onTracker={() => setScreen("tracker")} />
+        <ChatList
+          onTracker={() => navigate("tracker")}
+        />
       )}
       {screen === "tracker" && (
         <TrackerBoard />

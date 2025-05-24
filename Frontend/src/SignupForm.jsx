@@ -3,10 +3,11 @@ import React, { useState } from "react";
 
 export default function SignupForm({ onDone }) {
   const [agree, setAgree] = useState(false);
-  return (
-    <form style={form}>
+  return (   
+      <form style={form}>
       <h3 style={{ marginBottom: 16 }}>Create an account</h3>
       <input placeholder="Username" style={input} />
+      <input placeholder="UserID" style={input} />
       <input placeholder="Email" type="email" style={input} />
       <input placeholder="Password" type="password" style={input} />
       <input type="file" style={input} />
