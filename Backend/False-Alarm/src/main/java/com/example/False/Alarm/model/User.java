@@ -2,13 +2,21 @@ package com.example.False.Alarm.model;
 
 import com.example.False.Alarm.enums.ObservationStatus;
 import com.example.False.Alarm.enums.UserType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -16,7 +24,7 @@ import java.util.Date;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,15 +39,24 @@ public class User {
     @Column(unique = true,length = 50)
     String email;
 
-//    String password;
+    String password;
 
-//    String authorities;     //ADMIN, USER
+    String authorities;     //ADMIN, USER
 
     @Enumerated(value = EnumType.STRING)
     UserType userType; //ADMIN, USER
 
     @Column(length = 512)
     String profilePicUrl;
+
+    @OneToMany(mappedBy = "sender")
+    @JsonIgnore
+    List<Match> sentMatches;
+
+    @OneToMany(mappedBy = "receiver")
+    @JsonIgnore
+    List<Match> receivedMatches;
+
 
     @Builder.Default
     Boolean isEnabled = false;
@@ -53,4 +70,14 @@ public class User {
     @UpdateTimestamp
     Date updatedOn;
 
+    @Override
+    public String getUsername() {
+        return userId;
+    }
+
+    @Override   //this is from UserDetails.We override it as we store authorites as string ,but it has multiple authorites in it
+    public Collection<? extends GrantedAuthority> getAuthorities(){
+        return Arrays.stream(authorities.split(",")).map(authority->new SimpleGrantedAuthority(authority)).collect(Collectors.toList());
+
+    }
 }

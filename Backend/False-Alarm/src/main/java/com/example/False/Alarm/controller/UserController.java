@@ -27,9 +27,10 @@ public class UserController {
     @Autowired
     private ChatMonitorService chatMonitorService;
 
-    @Value("{project.image}")
+    @Value("${project.image}")
     private String path;
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/user")
     public ResponseEntity<?> addUser(@ModelAttribute @Valid AddUserRequest addUserRequest) throws IOException {
         ResponseEntity<?> response = userService.addUser(path,addUserRequest);
@@ -37,6 +38,7 @@ public class UserController {
 
     }
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/admin")
     public ResponseEntity<User> addAdmin(@RequestBody @Valid AddUserRequest addUserRequest){
         User addedUser = userService.addAdmin(addUserRequest);
@@ -44,6 +46,7 @@ public class UserController {
 
     }
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/chat/{userId}")
     public ResponseEntity<List<String>> checkChatMessage(@PathVariable String userId, @RequestBody String message) {
         if (chatMonitorService.isBlocked(userId)) {
@@ -52,17 +55,18 @@ public class UserController {
         return ResponseEntity.ok(chatMonitorService.checkMessage(userId, message));
     }
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/chat/reset/{userId}")
     public ResponseEntity<String> resetChatStatus(@PathVariable String userId) {
         return ResponseEntity.ok(chatMonitorService.resetCounts(userId));
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam("query") String query) {
         List<User> usersByName = userService.searchByUsername(query);
         List<User> usersById = userService.searchByUserId(query);
 
-        // Combine both and remove duplicates if any
         Set<User> combined = new LinkedHashSet<>();
         combined.addAll(usersByName);
         combined.addAll(usersById);

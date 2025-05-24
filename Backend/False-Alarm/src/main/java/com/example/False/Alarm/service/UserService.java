@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class UserService {
+public class UserService implements UserDetailsService {
 
     @Autowired
     UserRepository userRepository;
@@ -40,7 +43,7 @@ public class UserService {
         User user = UserMapper.mapToUser(addUserRequest);
         user.setProfilePicUrl(response);
         user.setUserType(UserType.USER);
-//        user.setAuthorities("USER"); //uncomment when added security
+        user.setAuthorities("USER");
         userRepository.save(user);
         log.info("User added successfully");
         return new ResponseEntity<>(user, HttpStatus.CREATED);
@@ -48,6 +51,7 @@ public class UserService {
 
     private String uploadImage(String path, MultipartFile image) throws IOException {
         String fileName = image.getOriginalFilename();
+
         String extension = fileName.substring(fileName.lastIndexOf(".")+1).toLowerCase();
         if(!extension.equals("png" ) && !extension.equals("jpg") && !extension.equals("jpeg")){
             log.info("File extension not supported");
@@ -72,7 +76,7 @@ public class UserService {
     public User addAdmin(@Valid AddUserRequest addUserRequest){
         User user = UserMapper.mapToUser(addUserRequest);
         user.setUserType(UserType.ADMIN);
-//        user.setAuthorities("ADMIN");   //uncomment when added security
+        user.setAuthorities("ADMIN");  
 
         return userRepository.save(user);
     }
@@ -85,4 +89,15 @@ public class UserService {
         return userRepository.findByUserIdContainingIgnoreCase(query);
     }
 
+    @Override
+    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
+        User user = userRepository.findByUserId(userId);
+
+        if(user != null){
+            return user;
+
+        }
+        throw new  UsernameNotFoundException(userId.concat(" doesnot exist"));
+
+    }
 }
