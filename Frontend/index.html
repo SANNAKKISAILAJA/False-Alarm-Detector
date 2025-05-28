@@ -9,5 +9,21 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      const ws = new WebSocket("ws://localhost:8080/ws/alarm");
+      ws.onopen = () => log("Connected");
+      ws.onmessage = (e) => log("Received: " + e.data);
+      ws.onclose = () => log("Closed");
+
+      function send() {
+          const msg = document.getElementById("msg").value;
+          ws.send(msg);
+      }
+
+      function log(message) {
+          const div = document.getElementById("output");
+          div.innerHTML += "<p>" + message + "</p>";
+      }
+    </script>
   </body>
 </html>
