@@ -74,4 +74,29 @@ public class UserController {
         return ResponseEntity.ok(new ArrayList<>(combined));
     }
 
+    @PostMapping("/invite/{senderId}/{receiverId}")
+    public ResponseEntity<String> sendInvite(@PathVariable String senderId, @PathVariable String receiverId) {
+        return userService.sendInvite(senderId, receiverId);
+    }
+
+    @PostMapping("/invite/accept/{matchId}")
+    public ResponseEntity<String> acceptInvite(@PathVariable String matchId) {
+        return userService.acceptInvite(matchId);
+    }
+
+    @DeleteMapping("/invite/reject/{matchId}")
+    public ResponseEntity<String> rejectInvite(@PathVariable String matchId) {
+        return userService.rejectInvite(matchId);
+    }
+
+    @GetMapping("/invites/sent/{senderUserId}")
+    public ResponseEntity<List<User>> getSentInvites(@PathVariable String senderUserId) {
+        return ResponseEntity.ok(userService.getSentInvites(senderUserId));
+    }
+
+    @GetMapping("/invites/received/{receiverUserId}")
+    public ResponseEntity<List<User>> getReceivedInvites(@PathVariable String receiverUserId) {
+        return ResponseEntity.ok(userService.getReceivedInvites(receiverUserId));
+    }
+
 }

@@ -4,7 +4,11 @@ import com.example.False.Alarm.dto.AddUserRequest;
 import com.example.False.Alarm.dto.UserSearchDTO;
 import com.example.False.Alarm.enums.UserType;
 import com.example.False.Alarm.mapper.UserMapper;
+import com.example.False.Alarm.model.Conversation;
+import com.example.False.Alarm.model.Match;
 import com.example.False.Alarm.model.User;
+import com.example.False.Alarm.repository.ConversationRepository;
+import com.example.False.Alarm.repository.MatchRepository;
 import com.example.False.Alarm.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +35,12 @@ public class UserService implements UserDetailsService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    MatchRepository matchRepository;
+
+    @Autowired
+    ConversationRepository conversationRepository;
 
 
     public ResponseEntity<?> addUser(String path, AddUserRequest addUserRequest) throws IOException {
@@ -100,4 +110,69 @@ public class UserService implements UserDetailsService {
         throw new  UsernameNotFoundException(userId.concat(" doesnot exist"));
 
     }
+
+    public ResponseEntity<String> sendInvite(String senderId, String receiverId) {
+        User sender = userRepository.findByUserId(senderId);
+        User receiver = userRepository.findByUserId(receiverId);
+        if (sender == null || receiver == null) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        Match match = Match.builder()
+                .sender(sender)
+                .receiver(receiver)
+                .build();
+
+        matchRepository.save(match);
+        return new ResponseEntity<>("Invite sent successfully", HttpStatus.OK);
+    }
+
+    public ResponseEntity<String> acceptInvite(String matchId) {
+        Match match = matchRepository.findById(matchId).orElse(null);
+        if (match == null) {
+            return new ResponseEntity<>("Invite not found", HttpStatus.NOT_FOUND);
+        }
+
+        Conversation conversation = Conversation.builder()
+                .user(match.getSender())
+                .build();
+
+        conversation = conversationRepository.save(conversation);
+        match.setConversation(conversation);
+
+        matchRepository.save(match);
+        return new ResponseEntity<>("Invite accepted.", HttpStatus.OK);
+    }
+
+
+    public ResponseEntity<String> rejectInvite(String matchId) {
+        if (!matchRepository.existsById(matchId)) {
+            return new ResponseEntity<>("Invite not found", HttpStatus.NOT_FOUND);
+        }
+
+        matchRepository.deleteById(matchId);
+        return new ResponseEntity<>("Invite rejected", HttpStatus.OK);
+    }
+
+    public List<User> getSentInvites(String senderUserId) {
+        User sender = userRepository.findByUserId(senderUserId);
+
+        List<Match> sentMatches = matchRepository.findBySender(sender);
+        return sentMatches.stream()
+                .map(Match::getReceiver)
+                .collect(Collectors.toList());
+    }
+
+
+    public List<User> getReceivedInvites(String receiverUserId) {
+        User receiver = userRepository.findByUserId(receiverUserId);
+
+        List<Match> receivedMatches = matchRepository.findByReceiver(receiver);
+        return receivedMatches.stream()
+                .map(Match::getSender)
+                .collect(Collectors.toList());
+    }
+
+
+
 }
