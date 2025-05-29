@@ -1,21 +1,73 @@
-// SignupForm.js
 import React, { useState } from "react";
 
 export default function SignupForm({ onDone }) {
+  const [username, setUsername] = useState("");
+  const [userid, setUserid] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [file, setFile] = useState(null);
   const [agree, setAgree] = useState(false);
-  return (   
-      <form style={form}>
-      <h3 style={{ marginBottom: 16 }}>Create an account</h3>
-      <input placeholder="Username" style={input} />
-      <input placeholder="UserID" style={input} />
-      <input placeholder="Email" type="email" style={input} />
-      <input placeholder="Password" type="password" style={input} />
-      <input type="file" style={input} />
+
+  const handleDone = () => {
+    if (!username || !userid || !email || !password || !file || !agree) {
+      alert("Enter all required credentials.");
+      return;
+    }
+    onDone({ username, userid, email, password, file });
+  };
+
+  return (
+    <form style={form} onSubmit={e => e.preventDefault()}>
+      <h3 style={{ marginBottom: 16, textAlign: "center" }}>Create an account</h3>
+      <input
+        placeholder="Username"
+        style={input}
+        value={username}
+        onChange={e => setUsername(e.target.value)}
+      />
+      <input
+        placeholder="UserID"
+        style={input}
+        value={userid}
+        onChange={e => setUserid(e.target.value)}
+      />
+      <input
+        placeholder="Email"
+        type="email"
+        style={input}
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+      />
+      <input
+        placeholder="Password"
+        type="password"
+        style={input}
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+      />
+      <input
+        type="file"
+        style={input}
+        onChange={e => setFile(e.target.files[0])}
+      />
       <div style={{ display: "flex", alignItems: "center", margin: "16px 0" }}>
-        <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
-        <label style={{ marginLeft: 8, fontSize: 14 }}>I agree to Terms and Conditions</label>
+        <input
+          type="checkbox"
+          checked={agree}
+          onChange={e => setAgree(e.target.checked)}
+        />
+        <label style={{ marginLeft: 8, fontSize: 14 }}>
+          I agree to Terms and Conditions
+        </label>
       </div>
-      <button type="button" style={doneBtn} disabled={!agree} onClick={onDone}>Done</button>
+      <button
+        type="button"
+        style={doneBtn}
+        disabled={!agree}
+        onClick={handleDone}
+      >
+        Done
+      </button>
     </form>
   );
 }
