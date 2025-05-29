@@ -4,13 +4,20 @@ import com.example.False.Alarm.dto.AddUserRequest;
 import com.example.False.Alarm.dto.UserSearchDTO;
 import com.example.False.Alarm.enums.UserType;
 import com.example.False.Alarm.mapper.UserMapper;
+import com.example.False.Alarm.model.Conversation;
+import com.example.False.Alarm.model.Match;
 import com.example.False.Alarm.model.User;
+import com.example.False.Alarm.repository.ConversationRepository;
+import com.example.False.Alarm.repository.MatchRepository;
 import com.example.False.Alarm.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,10 +31,16 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class UserService {
+public class UserService implements UserDetailsService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    MatchRepository matchRepository;
+
+    @Autowired
+    ConversationRepository conversationRepository;
 
 
     public ResponseEntity<?> addUser(String path, AddUserRequest addUserRequest) throws IOException {
@@ -40,7 +53,7 @@ public class UserService {
         User user = UserMapper.mapToUser(addUserRequest);
         user.setProfilePicUrl(response);
         user.setUserType(UserType.USER);
-//        user.setAuthorities("USER"); //uncomment when added security
+        user.setAuthorities("USER");
         userRepository.save(user);
         log.info("User added successfully");
         return new ResponseEntity<>(user, HttpStatus.CREATED);
@@ -48,6 +61,7 @@ public class UserService {
 
     private String uploadImage(String path, MultipartFile image) throws IOException {
         String fileName = image.getOriginalFilename();
+
         String extension = fileName.substring(fileName.lastIndexOf(".")+1).toLowerCase();
         if(!extension.equals("png" ) && !extension.equals("jpg") && !extension.equals("jpeg")){
             log.info("File extension not supported");
@@ -72,7 +86,7 @@ public class UserService {
     public User addAdmin(@Valid AddUserRequest addUserRequest){
         User user = UserMapper.mapToUser(addUserRequest);
         user.setUserType(UserType.ADMIN);
-//        user.setAuthorities("ADMIN");   //uncomment when added security
+        user.setAuthorities("ADMIN");  
 
         return userRepository.save(user);
     }
@@ -84,5 +98,81 @@ public class UserService {
     public List<User> searchByUserId(String query) {
         return userRepository.findByUserIdContainingIgnoreCase(query);
     }
+
+    @Override
+    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
+        User user = userRepository.findByUserId(userId);
+
+        if(user != null){
+            return user;
+
+        }
+        throw new  UsernameNotFoundException(userId.concat(" doesnot exist"));
+
+    }
+
+    public ResponseEntity<String> sendInvite(String senderId, String receiverId) {
+        User sender = userRepository.findByUserId(senderId);
+        User receiver = userRepository.findByUserId(receiverId);
+        if (sender == null || receiver == null) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        Match match = Match.builder()
+                .sender(sender)
+                .receiver(receiver)
+                .build();
+
+        matchRepository.save(match);
+        return new ResponseEntity<>("Invite sent successfully", HttpStatus.OK);
+    }
+
+    public ResponseEntity<String> acceptInvite(String matchId) {
+        Match match = matchRepository.findById(matchId).orElse(null);
+        if (match == null) {
+            return new ResponseEntity<>("Invite not found", HttpStatus.NOT_FOUND);
+        }
+
+        Conversation conversation = Conversation.builder()
+                .user(match.getSender())
+                .build();
+
+        conversation = conversationRepository.save(conversation);
+        match.setConversation(conversation);
+
+        matchRepository.save(match);
+        return new ResponseEntity<>("Invite accepted.", HttpStatus.OK);
+    }
+
+
+    public ResponseEntity<String> rejectInvite(String matchId) {
+        if (!matchRepository.existsById(matchId)) {
+            return new ResponseEntity<>("Invite not found", HttpStatus.NOT_FOUND);
+        }
+
+        matchRepository.deleteById(matchId);
+        return new ResponseEntity<>("Invite rejected", HttpStatus.OK);
+    }
+
+    public List<User> getSentInvites(String senderUserId) {
+        User sender = userRepository.findByUserId(senderUserId);
+
+        List<Match> sentMatches = matchRepository.findBySender(sender);
+        return sentMatches.stream()
+                .map(Match::getReceiver)
+                .collect(Collectors.toList());
+    }
+
+
+    public List<User> getReceivedInvites(String receiverUserId) {
+        User receiver = userRepository.findByUserId(receiverUserId);
+
+        List<Match> receivedMatches = matchRepository.findByReceiver(receiver);
+        return receivedMatches.stream()
+                .map(Match::getSender)
+                .collect(Collectors.toList());
+    }
+
+
 
 }

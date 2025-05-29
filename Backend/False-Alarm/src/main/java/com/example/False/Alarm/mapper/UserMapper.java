@@ -12,7 +12,7 @@ public class UserMapper {
                 .username(UserRequest.getUsername())
                 .userId(UserRequest.getUserId())
                 .email(UserRequest.getEmail())
-//                .password(UserRequest.getPassword())    //add after learning Spring Security
+                .password(UserRequest.getPassword())    //add after learning Spring Security
                 .observationStatus(ObservationStatus.NOT_OBSERVED)
                 .isEnabled(UserRequest.getIsEnabled())
                 .build();
