@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import AuthLanding from "./AuthLanding";
 import SignupForm from "./SignupForm";
 import LoginForm from "./LoginForm";
@@ -7,59 +8,68 @@ import ChatList from "./ChatList";
 import TrackerBoard from "./TrackerBoard";
 import Background from "./Background";
 
-function App() {
-  const [screen, setScreen] = useState("landing");
-  const [prevScreen, setPrevScreen] = useState(null);
-
-  // Helper to change screens and remember the previous one
-  const navigate = (nextScreen) => {
-    setPrevScreen(screen);
-    setScreen(nextScreen);
-  };
-
-  // Go back to the previous screen
-  const goToPrevious = () => {
-    if (prevScreen) {
-      setScreen(prevScreen);
-      setPrevScreen(null); // Optional: clear after going back
-    }
-  };
+// Wrapper to provide navigation to child components
+function AppRoutes() {
+  const navigate = useNavigate();
 
   return (
-    <Background
-      screen={screen}
-      onGoPrevious={prevScreen ? goToPrevious : null}
-    >
-      {screen === "landing" && (
-        <AuthLanding
-          onSignup={() => navigate("signup")}
-          onSignin={() => navigate("login")}
+    <Background>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <AuthLanding
+              onSignup={() => navigate("/signup")}
+              onSignin={() => navigate("/login")}
+            />
+          }
         />
-      )}
-      {screen === "signup" && (
-        <SignupForm
-          onDone={() => navigate("login")}
+        <Route
+          path="/signup"
+          element={
+            <SignupForm
+              onDone={() => navigate("/login")}
+            />
+          }
         />
-      )}
-      {screen === "login" && (
-        <LoginForm
-          onDone={() => navigate("invite")}
+        <Route
+          path="/login"
+          element={
+            <LoginForm
+              onDone={() => navigate("/invite")}
+            />
+          }
         />
-      )}
-      {screen === "invite" && (
-        <ChatInvite
-          onGoToChat={() => navigate("chat")}
+        <Route
+          path="/invite"
+          element={
+            <ChatInvite
+              onGoToChat={() => navigate("/chat")}
+            />
+          }
         />
-      )}
-      {screen === "chat" && (
-        <ChatList
-          onTracker={() => navigate("tracker")}
+        <Route
+          path="/chat"
+          element={
+            <ChatList
+              onTracker={() => navigate("/tracker")}
+            />
+          }
         />
-      )}
-      {screen === "tracker" && (
-        <TrackerBoard />
-      )}
+        <Route
+          path="/tracker"
+          element={<TrackerBoard />}
+        />
+      </Routes>
     </Background>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppRoutes />
+    </Router>
   );
 }
 
