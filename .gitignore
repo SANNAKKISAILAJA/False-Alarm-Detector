@@ -1,0 +1,33 @@
+# Backend
+Backend/False-Alarm/target/
+Backend/False-Alarm/.idea/
+Backend/False-Alarm/.settings/
+Backend/False-Alarm/.classpath
+Backend/False-Alarm/.project
+Backend/False-Alarm/.mvn/
+Backend/False-Alarm/test.log*
+
+# Frontend
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.env
+Frontend/.env.local
+
+# AI Service
+AI/__pycache__/
+AI/*.pyc
+AI/.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+*.log.*
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

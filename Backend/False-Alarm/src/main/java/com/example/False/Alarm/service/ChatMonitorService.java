@@ -2,15 +2,26 @@ package com.example.False.Alarm.service;
 
 import com.example.False.Alarm.enums.FlaggedTerms;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 @Service
 public class ChatMonitorService {
+    private static final Logger logger = LoggerFactory.getLogger(ChatMonitorService.class);
 
     private final Map<String, Map<String, Integer>> userTermCounts = new HashMap<>();
     private final Map<String, Integer> totalFlaggedUsed = new HashMap<>();
     private final int TERM_LIMIT = 3;
+    
+    private final AIService aiService;
+
+    @Autowired
+    public ChatMonitorService(AIService aiService) {
+        this.aiService = aiService;
+    }
 
     public List<String> checkMessage(String userId, String message) {
         List<String> alerts = new ArrayList<>();
@@ -19,6 +30,23 @@ public class ChatMonitorService {
         userTermCounts.putIfAbsent(userId, new HashMap<>());
         totalFlaggedUsed.putIfAbsent(userId, 0);
 
+        // First check with AI service
+        try {
+            if (aiService.isMessageToxic(message)) {
+                alerts.add("🚫 AI Detection: This message contains potentially harmful content.");
+                int total = totalFlaggedUsed.get(userId) + 1;
+                totalFlaggedUsed.put(userId, total);
+                
+                if (total >= TERM_LIMIT) {
+                    alerts.add("🚫 You have exceeded the warning limit. You are now blocked from chatting.");
+                }
+                return alerts;
+            }
+        } catch (Exception e) {
+            logger.warn("AI service check failed, falling back to basic checks", e);
+        }
+
+        // Fallback to basic term checking
         for (String term : FlaggedTerms.getAllTerms()) {
             if (messageLower.contains(term)) {
                 Map<String, Integer> termCounts = userTermCounts.get(userId);
