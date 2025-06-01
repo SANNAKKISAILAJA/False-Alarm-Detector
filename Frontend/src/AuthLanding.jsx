@@ -1,42 +1,278 @@
-// AuthLanding.js
 import React, { useState } from "react";
 
-export default function AuthLanding({ onSignup, onSignin }) {
-  const [active, setActive] = useState("signup");
+// Navbar
+function Navbar() {
   return (
-    <div style={container}>
-      <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-        <button style={active === "signup" ? activeBtn : btn} onClick={() => setActive("signup")}>SIGNUP</button>
-        <button style={active === "signin" ? activeBtn : btn} onClick={onSignin}>SIGNIN</button>
+    <header style={navbarStyle}>
+      <div style={{ fontWeight: 750, fontSize:25, color: "#e57373" }}>
+        False Alarm Detection
       </div>
-      <button style={googleBtn}>
-        <img src="data:image/png;base64,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" alt="G" 
-        style={{ width: "24px", height: "24px",marginRight: 8 }} />
-        Continue with Google
-      </button>
-      <div style={{ marginTop: 24, fontSize: 14 }}>
-        Don't have an account? <span onClick={onSignup} style={{ color: "#e57373", cursor: "pointer" }}>Signup</span>
+      <nav>
+        <a href="#" style={navLink}>Home</a>
+        <a href="#" style={navLink}>About</a>
+        <a href="#" style={navLink}>Contact</a>
+      </nav>
+    </header>
+  );
+}
+
+// Footer
+function Footer() {
+  return (
+    <footer style={footerStyle}>
+      <div>
+        Contact: <a href="mailto:contact@myapp.com" style={footerLink}>contact@myapp.com</a> |{" "}
+        <a href="tel:+1234567890" style={footerLink}>+1 234 567 890</a>
+      </div>
+    </footer>
+  );
+}
+function MissionVision() {
+  const features = [
+    {
+      icon: "🚨",
+      title: "Identify False Alarms",
+      description: " The system evaluates warning signals and message patterns to determine the probability that an alert is a false alarm, reducing unnecessary notifications and minimizing alarm fatigue for users and moderators.",
+    },
+    {
+      icon: "⚠️",
+      title: "Provide Warning Messages",
+      description: "When potentially harmful or misleading content is detected, users receive immediate warning messages, helping to prevent the spread of misinformation or accidental panic.",
+    },
+    {
+      icon: "🚫",
+      title: "Spot Misuse Candidates",
+      description: "The platform continuously monitors for patterns of misuse, such as repeated triggering of false alarms or suspicious activity, and flags these users for further review or action by moderators.",
+    },
+  ];
+
+  const [hoveredCard, setHoveredCard] = useState(null);
+
+  const cardBaseStyle = {
+    background: "rgba(255,255,255,0.85)",
+    borderRadius: 10,
+    padding: 24,
+    margin: 10,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    transition: "all 0.3s ease",
+    flex: "1 1 200px", // Allows cards to grow and shrink, minimum 200px width
+    minWidth: 200, // Minimum width for each card
+  };
+
+  const cardHoveredStyle = {
+    ...cardBaseStyle,
+    transform: "translateY(-5px)",
+    boxShadow: "0 6px 16px rgba(0,0,0,0.2)",
+    background: "rgba(255,255,255,1)",
+  };
+
+  const missionContainerStyle = {
+    width: "100%",
+    maxWidth: 1200,
+    margin: "40px auto",
+    textAlign: "center",
+  };
+
+  const missionCardsStyle = {
+    display: "flex",
+    flexWrap: "wrap", // Allows cards to wrap if screen is too narrow
+    justifyContent: "center",
+    marginTop: 24,
+    gap: 16, // Adds space between cards (modern browsers)
+  };
+
+  return (
+    <div style={missionContainerStyle}>
+      <h2 style={{ fontSize: 32, color: "#e57373", marginBottom: 16 }}>Our Mission and Vision</h2>
+      <div style={missionCardsStyle}>
+        {features.map((feature, index) => (
+          <div
+            key={index}
+            style={hoveredCard === index ? cardHoveredStyle : cardBaseStyle}
+            onMouseEnter={() => setHoveredCard(index)}
+            onMouseLeave={() => setHoveredCard(null)}
+          >
+            <span style={{ fontSize: 32, marginBottom: 8, display: "block" }}>{feature.icon}</span>
+            <h3 style={{ fontSize: 20, marginBottom: 8 }}>{feature.title}</h3>
+            <p style={{ fontSize: 16 }}>{feature.description}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
-  
 }
 
-const container = {
-  background: "rgba(255,255,255,0.6)",
-  borderRadius: 16,
-  padding: 40,
-  minWidth: 340,
+
+
+// AuthLanding Box
+function AuthLandingBox({ onSignup, onSignin }) {
+  const [active, setActive] = useState("signup");
+
+  return (
+    <div style={authBoxStyle}>
+      <p style={{ fontSize: 16, marginBottom: 16 }}>
+        Connect and achieve more with us. Sign up or sign in to begin!
+      </p>
+      <div style={buttonGroup}>
+        <button
+          style={active === "signup" ? activeBtn : btn}
+          onClick={() => {
+            setActive("signup");
+            onSignup();
+          }}
+        >
+          SIGNUP
+        </button>
+        <button
+          style={active === "signin" ? activeBtn : btn}
+          onClick={() => {
+            setActive("signin");
+            onSignin();
+          }}
+        >
+          SIGNIN
+        </button>
+      </div>
+      <button style={googleBtn}>
+        <img
+          src="https://img.icons8.com/color/512/google-logo.png"
+          alt="Google"
+          style={{ width: 20, height: 20, marginRight: 8 }}
+        />
+        Continue with Google     
+      </button>
+    </div>
+  );
+}
+
+// Main Page
+export default function AuthLanding({ onSignup, onSignin }) {
+  return (
+    <div style={bodyBackground}>
+      <Navbar />
+      <main style={mainContent}>
+        <h1 style={headingStyle}>Welcome to this Page</h1>
+        <p style={bodyText}>
+        Your project is an intelligent chat monitoring system that detects false alarms and misuse in 
+        online conversations using advanced algorithms. It analyzes chat content in real time to 
+        distinguish between genuine alerts and suspicious messages, reducing unnecessary disruptions.
+        When harmful or misleading activity is detected, the system automatically issues warning 
+        notifications and flags repeat misusers for moderators. With a user-friendly interface and
+        customizable alerts, the platform helps create a safer and more trustworthy online 
+        communication environment.
+        </p>
+      </main>
+      <MissionVision />
+      <Footer />
+      {/* Auth Box Floating at Top Right of the page */}
+      <div style={authBoxFixedWrapper}>
+        <AuthLandingBox onSignup={onSignup} onSignin={onSignin} />
+      </div>
+    </div>
+  );
+}
+
+//
+// === Styles ===
+//
+
+const bodyBackground = {
+  minHeight: "100vh",
+  width: "100%",
+  margin: 0,
+  padding: 0,
+  display: "flex",
+  flexDirection: "column",
+  backgroundImage: "url('https://securitytoday.com/-/media/SEC/Security-Products/Images/2022/01/false_alarms.jpg')",
+  backgroundRepeat: "no-repeat",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundAttachment: "fixed",
+};
+
+
+const navbarStyle = {
+  width: "100%",
+  padding: "20px 40px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  background:"rgba(135, 206, 235, 0.9)",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+};
+
+const navLink = {
+  marginLeft: 20,
+  color: "#333",
+  textDecoration: "none",
+  fontSize: 16,
+};
+
+const mainContent = {
+  flex: 1,
+  width: "100%",
+  padding: "60px 40px",
   textAlign: "center",
 };
 
+const headingStyle = {
+  fontSize: 36,
+  color: "#e57373",
+  marginTop:"80px",
+  marginBottom: 16,
+};
+
+const bodyText = {
+  fontSize: "24px",
+  width: "850px",
+  marginLeft: "350px",
+  marginTop:"40px",
+};
+
+const footerStyle = {
+  width: "100%",
+  padding: 10,
+  textAlign: "center",
+  background: "#fff",
+  borderTop: "1px solid #ddd",
+};
+
+const footerLink = {
+  color: "#e57373",
+  textDecoration: "none",
+};
+
+const authBoxFixedWrapper = {
+  position: "fixed",
+  top: 80,
+  right: 20,
+  zIndex: 1000,
+};
+
+const authBoxStyle = {
+  width: 300,
+  padding: 24,
+  background: "rgba(255,255,255,0.6)",
+  borderRadius: 10,
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  textAlign: "center",
+};
+
+const buttonGroup = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginBottom: 12,
+};
+
 const btn = {
-  padding: "10px 32px",
+  flex: 1,
+  padding: "10px",
+  margin: "0 4px",
   border: "none",
-  background: "#eee",
   borderRadius: 6,
-  fontWeight: 600,
+  background: "#e0e0e0",
   cursor: "pointer",
+  fontWeight: 600,
 };
 
 const activeBtn = {
@@ -45,16 +281,15 @@ const activeBtn = {
 };
 
 const googleBtn = {
-  marginTop: 12,
-  padding: "10px 32px",
+  marginTop: 10,
+  padding: "10px 30px",
   border: "none",
-  background: "#fff",
   borderRadius: 6,
-  fontWeight: 500,
+  background: "#fff",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
   cursor: "pointer",
-  boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+  fontWeight: 500,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  width: "100%",
 };
