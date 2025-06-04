@@ -14,7 +14,7 @@ public class UserMapper {
                 .email(UserRequest.getEmail())
                 .password(UserRequest.getPassword())    //add after learning Spring Security
                 .observationStatus(ObservationStatus.NOT_OBSERVED)
-                .isEnabled(UserRequest.getIsEnabled())
+                .isEnabled(true)  // Enable by default
                 .build();
     }
 }
