@@ -138,10 +138,11 @@ function AuthLandingBox({ onSignup, onSignin }) {
           src="https://img.icons8.com/color/512/google-logo.png"
           alt="Google"
           style={{ width: 20, height: 20, marginRight: 8 }}
-        />
-        Continue with Google     
+        /><span onClick={"http://localhost:8081/oauth2/authorization/google"}> 
+        Continue with Google  </span>
       </button>
     </div>
+
   );
 }
 
