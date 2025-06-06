@@ -34,4 +34,10 @@ public class AddUserRequest {
 
     @AssertTrue(message = "You must agree to terms and conditions")
     Boolean isEnabled;
+
+    private String role;
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
 }

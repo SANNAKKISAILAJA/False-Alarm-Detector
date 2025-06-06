@@ -1,21 +1,35 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 
 export default function LoginForm({ onDone }) {
   const [userid, setUserid] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState(""); // "admin" or "user"
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
 
-  const handleDone = () => {
+  const handleDone = async () => {
     if (!userid || !password || !role) {
       alert("Enter login credentials.");
       return;
     }
-    if (role === "admin") {
-      navigate("/tracker"); // Go to TrackerBoard for admin
-    } else {
-      onDone({ userid, password, role }); // Continue as before for user
+    try {
+      const res = await fetch("http://localhost:8081/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userid, password, role }),
+      });
+      if (res.ok) {
+        if (role === "admin") {
+          navigate("/tracker");
+        } else {
+          onDone({ userid, password, role });
+        }
+      } else {
+        const errorText = await res.text();
+        alert("Login failed");
+      }
+    } catch (err) {
+      alert("Network error");
     }
   };
 
@@ -58,7 +72,7 @@ export default function LoginForm({ onDone }) {
   );
 }
 
-// Styles remain unchanged...
+//styles
 const form = {
   background: "rgba(255,255,255,0.6)",
   borderRadius: 16,

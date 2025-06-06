@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Set;
 import com.example.False.Alarm.dto.TextInput;
 import com.example.False.Alarm.dto.Response;
+import com.example.False.Alarm.dto.LoginRequest;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -45,6 +47,12 @@ public class UserController {
         User addedUser = userService.addAdmin(addUserRequest);
         return new ResponseEntity<>(addedUser, HttpStatus.CREATED);
 
+    }
+
+    @CrossOrigin(origins = "*")
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        return userService.login(request);
     }
 
     @CrossOrigin(origins = "*")
