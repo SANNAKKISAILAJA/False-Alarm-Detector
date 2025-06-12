@@ -7,11 +7,6 @@ function Navbar() {
       <div style={{ fontWeight: 750, fontSize:25, color: "#e57373" }}>
         False Alarm Detection
       </div>
-      <nav>
-        <a href="#" style={navLink}>Home</a>
-        <a href="#" style={navLink}>About</a>
-        <a href="#" style={navLink}>Contact</a>
-      </nav>
     </header>
   );
 }
@@ -133,14 +128,14 @@ function AuthLandingBox({ onSignup, onSignin }) {
           SIGNIN
         </button>
       </div>
-      <button style={googleBtn}>
-        <img
-          src="https://img.icons8.com/color/512/google-logo.png"
-          alt="Google"
-          style={{ width: 20, height: 20, marginRight: 8 }}
-        /><span onClick={"http://localhost:8081/oauth2/authorization/google"}> 
-        Continue with Google  </span>
-      </button>
+      <button style={googleBtn} onClick={() => window.location.href = "http://localhost:8081/oauth2/authorization/google"}>
+    <img
+      src="https://img.icons8.com/color/512/google-logo.png"
+      alt="Google"
+      style={{ width: 20, height: 20, marginRight: 8 }}
+    />
+    <span>Continue with Google</span>
+    </button>
     </div>
 
   );
@@ -202,18 +197,10 @@ const navbarStyle = {
   boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
 };
 
-const navLink = {
-  marginLeft: 20,
-  color: "#333",
-  textDecoration: "none",
-  fontSize: 16,
-};
-
 const mainContent = {
   flex: 1,
   width: "100%",
   padding: "60px 40px",
-  textAlign: "center",
 };
 
 const headingStyle = {
@@ -221,12 +208,13 @@ const headingStyle = {
   color: "#e57373",
   marginTop:"80px",
   marginBottom: 16,
+  textAlign: "center",
 };
 
 const bodyText = {
   fontSize: "24px",
   width: "850px",
-  marginLeft: "350px",
+  marginLeft: "375px",
   marginTop:"40px",
 };
 
