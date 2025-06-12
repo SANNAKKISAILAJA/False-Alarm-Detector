@@ -59,7 +59,7 @@ export default function ChatInvite({ onGoToChat, currentUser }) {
       socket.send(JSON.stringify({
         type: "invite",
         userId: userId,
-        from: currentUser.id // Automatically uses the logged-in user's ID
+        from: currentUser.id
       }));
     }
   };
