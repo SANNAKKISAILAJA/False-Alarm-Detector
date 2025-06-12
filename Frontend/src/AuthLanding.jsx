@@ -201,7 +201,6 @@ const mainContent = {
   flex: 1,
   width: "100%",
   padding: "60px 40px",
-  textAlign: "center",
 };
 
 const headingStyle = {
@@ -209,12 +208,13 @@ const headingStyle = {
   color: "#e57373",
   marginTop:"80px",
   marginBottom: 16,
+  textAlign: "center",
 };
 
 const bodyText = {
   fontSize: "24px",
   width: "850px",
-  marginLeft: "350px",
+  marginLeft: "375px",
   marginTop:"40px",
 };
 
