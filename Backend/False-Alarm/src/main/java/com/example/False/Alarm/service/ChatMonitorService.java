@@ -38,7 +38,8 @@ public class ChatMonitorService {
                 totalFlaggedUsed.put(userId, total);
                 
                 if (total >= TERM_LIMIT) {
-                    alerts.add("🚫 You have exceeded the warning limit. You are now blocked from chatting.");
+                    alerts.add("🚫 You have used flagged terms 3 times. You are now blocked from chatting.");
+                    fetchUserLocation(userId);
                 }
                 return alerts;
             }
@@ -64,6 +65,7 @@ public class ChatMonitorService {
 
                 if (total >= TERM_LIMIT) {
                     alerts.add("🚫 You have used flagged terms 3 times. You are now blocked from chatting.");
+                    fetchUserLocation(userId);
                 }
 
                 break; // Only one term per message
@@ -71,6 +73,11 @@ public class ChatMonitorService {
         }
 
         return alerts.isEmpty() ? List.of("✔ Message accepted.") : alerts;
+    }
+
+    private void fetchUserLocation(String userId) {
+        System.out.println("Fetching location for user: " + userId);
+        // You can integrate with a geolocation service or notify the frontend to request location
     }
 
     public String resetCounts(String userId) {
