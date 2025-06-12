@@ -63,7 +63,7 @@ export default function ChatInvite({ onGoToChat, currentUser }) {
       }));
     }
   };
-
+  
   const handleGoToChat = () => {
     onGoToChat();
   };
