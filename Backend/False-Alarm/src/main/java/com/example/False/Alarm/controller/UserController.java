@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -83,37 +85,42 @@ public class UserController {
         return ResponseEntity.ok(new ArrayList<>(combined));
     }
 
-    @PostMapping("/invite/{senderId}/{receiverId}")
-    public ResponseEntity<String> sendInvite(@PathVariable String senderId, @PathVariable String receiverId) {
+    @PostMapping("/invite/{receiverId}")
+    public ResponseEntity<String> sendInvite( @PathVariable String receiverId) {
+        String senderId=SecurityContextHolder.getContext().getAuthentication().getName();
         return userService.sendInvite(senderId, receiverId);
     }
 
-    @PostMapping("/invite/accept/{matchId}")
-    public ResponseEntity<String> acceptInvite(@PathVariable String matchId) {
-        return userService.acceptInvite(matchId);
+    @PostMapping("/invite/accept/{senderId}")
+    public ResponseEntity<String> acceptInvite(@PathVariable Long senderId, Authentication authentication) {
+        String receiverUsername = authentication.getName(); // Authenticated user's username
+        return userService.acceptInvite(senderId, receiverUsername);
     }
 
-    @DeleteMapping("/invite/reject/{matchId}")
-    public ResponseEntity<String> rejectInvite(@PathVariable String matchId) {
-        return userService.rejectInvite(matchId);
+    @DeleteMapping("/invite/reject/{senderId}")
+    public ResponseEntity<String> rejectInvite(@PathVariable Long senderId, Authentication authentication) {
+        String receiverUsername = authentication.getName();
+        return userService.rejectInvite(senderId, receiverUsername);
     }
 
     @GetMapping("/invites/sent/{senderUserId}")
-    public ResponseEntity<List<User>> getSentInvites(@PathVariable String senderUserId) {
+    public ResponseEntity<?> getSentInvites(@PathVariable String senderUserId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         if(!user.getUsername().equals(senderUserId)){
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid user: You are not authorized to view these invites.");
         }
         return ResponseEntity.ok(userService.getSentInvites(senderUserId));
     }
 
     @GetMapping("/invites/received/{receiverUserId}")
-    public ResponseEntity<List<User>> getReceivedInvites(@PathVariable String receiverUserId) {
+    public ResponseEntity<?> getReceivedInvites(@PathVariable String receiverUserId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         if(!user.getUsername().equals(receiverUserId)){
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid user: You are not authorized to view these invites.");
         }
         return ResponseEntity.ok(userService.getReceivedInvites(receiverUserId));
     }

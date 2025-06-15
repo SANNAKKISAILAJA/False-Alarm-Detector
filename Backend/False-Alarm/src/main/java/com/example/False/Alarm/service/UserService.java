@@ -2,6 +2,7 @@ package com.example.False.Alarm.service;
 
 import com.example.False.Alarm.dto.AddUserRequest;
 import com.example.False.Alarm.dto.LoginRequest;
+import com.example.False.Alarm.enums.MatchStatus;
 import com.example.False.Alarm.enums.UserType;
 import com.example.False.Alarm.mapper.UserMapper;
 import com.example.False.Alarm.model.Conversation;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -130,44 +132,66 @@ public class UserService implements UserDetailsService {
     public ResponseEntity<String> sendInvite(String senderId, String receiverId) {
         User sender = userRepository.findByUserId(senderId);
         User receiver = userRepository.findByUserId(receiverId);
-        if (sender == null || receiver == null) {
-            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+
+        // Check if match already exists
+        Optional<Match> existingMatch = matchRepository.findBySenderAndReceiver(sender, receiver);
+        if (existingMatch.isPresent()) {
+            return new ResponseEntity<>("Invite already sent", HttpStatus.BAD_REQUEST);
         }
 
-        Match match = Match.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .build();
-
+        Match match = new Match();
+        match.setSender(sender);
+        match.setReceiver(receiver);
+        match.setStatus(MatchStatus.PENDING);
         matchRepository.save(match);
+
         return new ResponseEntity<>("Invite sent successfully", HttpStatus.OK);
     }
 
-    // Accept invite
-    public ResponseEntity<String> acceptInvite(String matchId) {
-        Match match = matchRepository.findById(matchId).orElse(null);
-        if (match == null) {
-            return new ResponseEntity<>("Invite not found", HttpStatus.NOT_FOUND);
+    public ResponseEntity<String> acceptInvite(Long senderId, String receiverUsername) {
+        // Step 1: Get receiver's numeric ID from username
+        Optional<User> receiverOpt = userRepository.findByUsername(receiverUsername);
+        if (receiverOpt.isEmpty()) {
+            return new ResponseEntity<>("Receiver not found", HttpStatus.NOT_FOUND);
+        }
+        Long receiverId = Long.valueOf(receiverOpt.get().getId()); // 💡 numeric receiver ID
+
+        // Step 2: Fetch the match using numeric senderId + receiverId
+        Match match = matchRepository.findBySenderIdAndReceiverId(senderId, receiverId)
+                .orElseThrow(() -> new RuntimeException("No invite found from sender"));
+
+        // Step 3: Check and accept
+        if (MatchStatus.ACCEPTED.equals(match.getStatus())) {
+            return new ResponseEntity<>("Already accepted", HttpStatus.BAD_REQUEST);
         }
 
+        match.setStatus(MatchStatus.ACCEPTED);
         Conversation conversation = Conversation.builder()
                 .user(match.getSender())
                 .build();
 
         conversation = conversationRepository.save(conversation);
         match.setConversation(conversation);
-
         matchRepository.save(match);
-        return new ResponseEntity<>("Invite accepted.", HttpStatus.OK);
+
+        return new ResponseEntity<>("Invite accepted", HttpStatus.OK);
     }
 
-    // Reject invite
-    public ResponseEntity<String> rejectInvite(String matchId) {
-        if (!matchRepository.existsById(matchId)) {
-            return new ResponseEntity<>("Invite not found", HttpStatus.NOT_FOUND);
+    public ResponseEntity<String> rejectInvite(Long senderId, String receiverUsername) {
+        // Step 1: Fetch numeric receiverId
+        Optional<User> receiverOpt = userRepository.findByUsername(receiverUsername);
+        if (receiverOpt.isEmpty()) {
+            return new ResponseEntity<>("Receiver not found", HttpStatus.NOT_FOUND);
         }
+        Long receiverId = Long.valueOf(receiverOpt.get().getId());
 
-        matchRepository.deleteById(matchId);
+        // Step 2: Find match using numeric IDs
+        Match match = matchRepository.findBySenderIdAndReceiverId(senderId, receiverId)
+                .orElseThrow(() -> new RuntimeException("No invite found from sender"));
+
+        // Step 3: Reject = delete the match
+        matchRepository.delete(match);
+
         return new ResponseEntity<>("Invite rejected", HttpStatus.OK);
     }
 
@@ -175,9 +199,10 @@ public class UserService implements UserDetailsService {
     public List<User> getSentInvites(String senderUserId) {
         User sender = userRepository.findByUserId(senderUserId);
 
-        List<Match> sentMatches = matchRepository.findBySender(sender);
+        List<Match> sentMatches = matchRepository.findBySenderAndStatus(sender, MatchStatus.PENDING);
         return sentMatches.stream()
                 .map(Match::getReceiver)
+                .distinct()
                 .collect(Collectors.toList());
     }
 
@@ -185,9 +210,10 @@ public class UserService implements UserDetailsService {
     public List<User> getReceivedInvites(String receiverUserId) {
         User receiver = userRepository.findByUserId(receiverUserId);
 
-        List<Match> receivedMatches = matchRepository.findByReceiver(receiver);
+        List<Match> receivedMatches = matchRepository.findByReceiverAndStatus(receiver, MatchStatus.PENDING);
         return receivedMatches.stream()
                 .map(Match::getSender)
+                .distinct()
                 .collect(Collectors.toList());
     }
 }
