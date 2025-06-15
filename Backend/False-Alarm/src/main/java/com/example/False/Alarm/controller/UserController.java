@@ -100,6 +100,11 @@ public class UserController {
 
     @GetMapping("/invites/sent/{senderUserId}")
     public ResponseEntity<List<User>> getSentInvites(@PathVariable String senderUserId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+        if(!user.getUsername().equals(senderUserId)){
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(userService.getSentInvites(senderUserId));
     }
 
