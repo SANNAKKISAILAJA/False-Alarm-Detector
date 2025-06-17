@@ -36,7 +36,7 @@ public class User implements UserDetails {
     @Column(length = 30, unique = true, nullable = false)
     String userId;
 
-    @Column(unique = true,length = 50)
+    @Column(unique = true, length = 50)
     String email;
 
     String password;
@@ -49,6 +49,9 @@ public class User implements UserDetails {
     @Column(length = 512)
     String profilePicUrl;
 
+    @Column(length = 100)
+    String location; 
+
     @OneToMany(mappedBy = "sender")
     @JsonIgnore
     List<Match> sentMatches;
@@ -56,7 +59,6 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "receiver")
     @JsonIgnore
     List<Match> receivedMatches;
-
 
     @Builder.Default
     Boolean isEnabled = false;
@@ -75,9 +77,18 @@ public class User implements UserDetails {
         return userId;
     }
 
-    @Override   //this is from UserDetails.We override it as we store authorites as string ,but it has multiple authorites in it
+    @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
-        return Arrays.stream(authorities.split(",")).map(authority->new SimpleGrantedAuthority(authority)).collect(Collectors.toList());
+        return Arrays.stream(authorities.split(","))
+                .map(authority -> new SimpleGrantedAuthority(authority))
+                .collect(Collectors.toList());
+    }
 
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 }
