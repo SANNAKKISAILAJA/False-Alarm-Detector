@@ -22,10 +22,12 @@ import java.util.Set;
 import com.example.False.Alarm.dto.TextInput;
 import com.example.False.Alarm.dto.Response;
 import com.example.False.Alarm.dto.LoginRequest;
+import com.example.False.Alarm.model.FlaggedUserDetails;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
+
     @Autowired
     UserService userService;
 
@@ -35,20 +37,24 @@ public class UserController {
     @Value("${project.image}")
     private String path;
 
+    // New endpoint: Get all users
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
     @CrossOrigin(origins = "*")
     @PostMapping("/user")
     public ResponseEntity<?> addUser(@ModelAttribute @Valid AddUserRequest addUserRequest) throws IOException {
-        ResponseEntity<?> response = userService.addUser(path,addUserRequest);
+        ResponseEntity<?> response = userService.addUser(path, addUserRequest);
         return response;
-
     }
 
     @CrossOrigin(origins = "*")
     @PostMapping("/admin")
-    public ResponseEntity<User> addAdmin(@RequestBody @Valid AddUserRequest addUserRequest){
+    public ResponseEntity<User> addAdmin(@RequestBody @Valid AddUserRequest addUserRequest) {
         User addedUser = userService.addAdmin(addUserRequest);
         return new ResponseEntity<>(addedUser, HttpStatus.CREATED);
-
     }
 
     @CrossOrigin(origins = "*")
@@ -63,7 +69,11 @@ public class UserController {
         if (chatMonitorService.isBlocked(userId)) {
             return ResponseEntity.ok(List.of("🚫 You are blocked. Type '/reset' to clear warnings."));
         }
-        return ResponseEntity.ok(chatMonitorService.checkMessage(userId, message));
+        // Get user details (username, location) from userService or session
+        User user = userService.getUserById(userId);
+        String username = user != null ? user.getUsername() : "Unknown";
+        String location = user != null ? user.getLocation() : "Unknown";
+        return ResponseEntity.ok(chatMonitorService.checkMessage(userId, username, message, location));
     }
 
     @CrossOrigin(origins = "*")
@@ -72,7 +82,6 @@ public class UserController {
         return ResponseEntity.ok(chatMonitorService.resetCounts(userId));
     }
 
-    @CrossOrigin(origins = "*")
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam("query") String query) {
         List<User> usersByName = userService.searchByUsername(query);
@@ -125,4 +134,9 @@ public class UserController {
         return ResponseEntity.ok(userService.getReceivedInvites(receiverUserId));
     }
 
+    @GetMapping("/flagged-users")
+    public ResponseEntity<List<FlaggedUserDetails>> getFlaggedUsers() {
+        List<FlaggedUserDetails> flaggedUsers = chatMonitorService.getFlaggedUsers();
+        return ResponseEntity.ok(flaggedUsers);
+    }
 }
