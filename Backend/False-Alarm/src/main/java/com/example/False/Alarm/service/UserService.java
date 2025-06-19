@@ -216,4 +216,12 @@ public class UserService implements UserDetailsService {
                 .distinct()
                 .collect(Collectors.toList());
     }
+    // Get all users
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+    // Get user by ID
+    public User getUserById(String userId) {
+        return userRepository.findByUserId(userId);
+    }
 }
