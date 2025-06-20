@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 // Example data
 const users = [
@@ -6,6 +7,69 @@ const users = [
   { name: "Abner", avatar: "https://randomuser.me/api/portraits/men/2.jpg" },
   { name: "Christie", avatar: "https://randomuser.me/api/portraits/women/1.jpg" },
 ];
+
+export default function ChatList() {
+  const [socket, setSocket] = useState(null);
+  const [message, setMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const location = useLocation();
+  const userId = location.state?.userId || "anonymous";
+  const username = location.state?.username || "Anonymous";
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8081/ws/alarm');
+
+    ws.onopen = () => {
+      console.log('WebSocket Connected');
+      setSocket(ws);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === 'alert') {
+        setAlerts(prev => [...prev, data.message]);
+      } else if (data.type === 'locationRequest') {
+        // Handle location request
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            ws.send(JSON.stringify({
+              type: 'location',
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }));
+          },
+          error => console.error('Location access denied:', error)
+        );
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket Disconnected');
+      setSocket(null);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  const sendMessage = (event) => {
+    event.preventDefault();
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+    if (message.trim()) {
+      socket.send(JSON.stringify({
+        userId: userId,
+        username: username,
+        message: message,
+        location: "123.456,789.012" // For testing, we can get real location later
+      }));
+      setMessage("");
+    }
+  };
 
 const chatRows = [
   { avatar: "https://randomuser.me/api/portraits/men/3.jpg" },
