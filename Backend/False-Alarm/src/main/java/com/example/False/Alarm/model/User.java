@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Getter
+@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User implements UserDetails {
 
@@ -84,11 +86,4 @@ public class User implements UserDetails {
                 .collect(Collectors.toList());
     }
 
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
 }
