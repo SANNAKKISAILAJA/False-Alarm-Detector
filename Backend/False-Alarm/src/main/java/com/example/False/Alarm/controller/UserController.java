@@ -70,7 +70,7 @@ public class UserController {
             return ResponseEntity.ok(List.of("🚫 You are blocked. Type '/reset' to clear warnings."));
         }
         // Get user details (username, location) from userService or session
-        User user = userService.getUserById(userId);
+        User user = (User) userService.loadUserByUsername(userId);
         String username = user != null ? user.getUsername() : "Unknown";
         String location = user != null ? user.getLocation() : "Unknown";
         return ResponseEntity.ok(chatMonitorService.checkMessage(userId, username, message, location));
