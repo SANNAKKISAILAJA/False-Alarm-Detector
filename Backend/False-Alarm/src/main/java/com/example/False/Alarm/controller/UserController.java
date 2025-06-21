@@ -93,6 +93,7 @@ public class UserController {
         return ResponseEntity.ok(chatMonitorService.resetCounts(userId));
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam("query") String query) {
         List<User> usersByName = userService.searchByUsername(query);
@@ -105,24 +106,28 @@ public class UserController {
         return ResponseEntity.ok(new ArrayList<>(combined));
     }
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/invite/{receiverId}")
     public ResponseEntity<String> sendInvite( @PathVariable String receiverId) {
         String senderId=SecurityContextHolder.getContext().getAuthentication().getName();
         return userService.sendInvite(senderId, receiverId);
     }
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/invite/accept/{senderId}")
     public ResponseEntity<String> acceptInvite(@PathVariable Long senderId, Authentication authentication) {
         String receiverUsername = authentication.getName(); // Authenticated user's username
         return userService.acceptInvite(senderId, receiverUsername);
     }
 
+    @CrossOrigin(origins = "*")
     @DeleteMapping("/invite/reject/{senderId}")
     public ResponseEntity<String> rejectInvite(@PathVariable Long senderId, Authentication authentication) {
         String receiverUsername = authentication.getName();
         return userService.rejectInvite(senderId, receiverUsername);
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/invites/sent/{senderUserId}")
     public ResponseEntity<?> getSentInvites(@PathVariable String senderUserId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -134,6 +139,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getSentInvites(senderUserId));
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/invites/received/{receiverUserId}")
     public ResponseEntity<?> getReceivedInvites(@PathVariable String receiverUserId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -145,12 +151,14 @@ public class UserController {
         return ResponseEntity.ok(userService.getReceivedInvites(receiverUserId));
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/flagged-users")
     public ResponseEntity<List<FlaggedUserDetails>> getFlaggedUsers() {
         List<FlaggedUserDetails> flaggedUsers = chatMonitorService.getFlaggedUsers();
         return ResponseEntity.ok(flaggedUsers);
     }
 
+    @CrossOrigin(origins = "*")
     @PostMapping("/{conversationId}")
     public Conversation addMessageToConversation(@PathVariable String conversationId, @RequestBody ChatMessage chatMessage) {
         Conversation conversation = conversationRepository.findById(conversationId)
@@ -162,6 +170,7 @@ public class UserController {
         return conversationService.addMessageToConversation(conversation, chatMessage);
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/{conversationId}")
     public Conversation getConversation(@PathVariable String conversationId) {
         return conversationRepository.findById(conversationId)
