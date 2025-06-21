@@ -1,5 +1,6 @@
 package com.example.False.Alarm.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -24,5 +25,6 @@ public class ChatMessage{
 
         @ManyToOne
         @JoinColumn(name = "conversation_id")
+        @JsonBackReference
         Conversation conversation;
 }

@@ -65,7 +65,7 @@ export default function ChatList() {
         userId: userId,
         username: username,
         message: message,
-        location: "123.456,789.012" // For testing, we can get real location later
+        location: "123.456,789.012" // For testing, we can get a real location later
       }));
       setMessage("");
     }
@@ -237,5 +237,5 @@ const chatRowAvatar = {
   height: 56,
   borderRadius: "50%",
   border: "2px solid #fff",
-};
+};}
 
