@@ -1,6 +1,7 @@
 package com.example.False.Alarm.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -24,5 +25,6 @@ public class Conversation {
     User user;  // The owner of the conversation
 
     @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL)
+    @JsonManagedReference
     List<ChatMessage> messages;
 }

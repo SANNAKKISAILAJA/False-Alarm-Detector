@@ -101,11 +101,6 @@ public class UserService implements UserDetailsService {
     public List<User> searchByUserId(String query) {
         return userRepository.findByUserIdContainingIgnoreCase(query);
     }
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
     // Spring Security user details loader
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
