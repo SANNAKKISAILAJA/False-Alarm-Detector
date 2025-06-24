@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 export default function ChatList() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [socket, setSocket] = useState(null);
+  const [message, setMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  const location = useLocation();
+  const userId = location.state?.userId || "anonymous";
+  const username = location.state?.username || "Anonymous";
 
   // Fetch users from your backend
   useEffect(() => {
@@ -14,6 +24,53 @@ export default function ChatList() {
       .then(data => setUsers(data))
       .catch(err => console.error('Error fetching users:', err));
   }, []);
+
+  // WebSocket logic
+  useEffect(() => {
+    const ws = new WebSocket(`ws://${window.location.hostname}:8081/ws/alarm`);
+    ws.onopen = () => {
+      console.log('WebSocket Connected');
+      setSocket(ws);
+    };
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'alert') {
+        setAlerts(prev => [...prev, data.message]);
+      } else if (data.type === 'locationRequest') {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            ws.send(JSON.stringify({
+              type: 'location',
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }));
+          },
+          error => console.error('Location access denied:', error)
+        );
+      }
+    };
+    ws.onclose = () => {
+      console.log('WebSocket Disconnected');
+      setSocket(null);
+    };
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  const sendMessage = (event) => {
+    event.preventDefault();
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    if (message.trim()) {
+      socket.send(JSON.stringify({
+        userId: userId,
+        username: username,
+        message: message,
+        location: "123.456,789.012" // For testing, we can get real location later
+      }));
+      setMessage("");
+    }
+  };
 
   return (
     <div style={container}>
@@ -60,6 +117,29 @@ export default function ChatList() {
               ? `Chat with ${selectedUser.username}`
               : "Select a chat to view messages."}
           </div>
+          {/* You can add your chat input and message display here */}
+          {selectedUser && (
+            <div style={{ padding: "20px" }}>
+              <form onSubmit={sendMessage}>
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  style={{ padding: "8px", width: "80%" }}
+                />
+                <button type="submit" style={{ padding: "8px 16px", marginLeft: "8px" }}>Send</button>
+              </form>
+              {/* Display alerts if needed */}
+              {alerts.length > 0 && (
+                <div style={{ marginTop: "16px", color: "red" }}>
+                  {alerts.map((alert, index) => (
+                    <div key={index}>{alert}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -151,21 +231,3 @@ const chatRowsContainer = {
   justifyContent: "flex-start",
   padding: "10px 0",
 };
-
-const chatRow = {
-  height: 64,
-  display: "flex",
-  alignItems: "center",
-  paddingLeft: 32,
-  marginBottom: 16,
-  borderRadius: 16,
-  marginRight: 32,
-};
-
-const chatRowAvatar = {
-  width: 56,
-  height: 56,
-  borderRadius: "50%",
-  border: "2px solid #fff",
-};}
-

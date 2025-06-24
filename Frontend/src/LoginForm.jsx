@@ -1,10 +1,11 @@
+// Updated LoginForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginForm({ onDone }) {
   const [userid, setUserid] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState(""); // "admin" or "user"
+  const [role, setRole] = useState("");
   const navigate = useNavigate();
 
   const handleDone = async () => {
@@ -13,23 +14,28 @@ export default function LoginForm({ onDone }) {
       return;
     }
     try {
+      const authString = btoa(`${userid}:${password}`);
       const res = await fetch("http://localhost:8081/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: userid, password, role }),
       });
       if (res.ok) {
+        localStorage.setItem("basicAuth", authString);
+        const redirectPath = localStorage.getItem("redirectAfterLogin") || "/invite";
+        localStorage.removeItem("redirectAfterLogin");
         if (role === "admin") {
           navigate("/tracker");
         } else {
           onDone({ userid, password, role });
+          navigate(redirectPath);
         }
       } else {
         const errorText = await res.text();
-        alert("Login failed");
+        alert("Login failed: " + errorText);
       }
     } catch (err) {
-      alert("Network error");
+      alert("Network error: " + err.message);
     }
   };
 
@@ -72,7 +78,7 @@ export default function LoginForm({ onDone }) {
   );
 }
 
-//styles
+// styles
 const form = {
   background: "rgba(255,255,255,0.6)",
   borderRadius: 16,
