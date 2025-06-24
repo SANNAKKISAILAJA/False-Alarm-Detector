@@ -6,7 +6,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import static org.mockito.Mockito.when;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,9 +21,12 @@ public class WebSocketFlowTest {
     @Autowired
     private ChatMonitorService chatMonitorService;
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private ChatMonitorService chatMonitorServiceMock;
+
     private String testUserId = "test-user";
     private String testUsername = "Test User";
-    private String testLocation = "123.456,789.012";
+
 
     @BeforeEach
     public void setUp() {
@@ -30,8 +37,10 @@ public class WebSocketFlowTest {
     @Test
     public void testNonToxicMessageFlow() {
         // Send a non-toxic message
+        when(chatMonitorServiceMock.checkMessage(testUserId, "Hello, how are you?"))
+            .thenReturn(List.of("✔ Message accepted."));
         List<String> alerts = chatMonitorService.checkMessage(
-            testUserId, testUsername, "Hello, how are you?", testLocation
+            testUserId, "Hello, how are you?"
         );
 
         // Verify message is accepted
@@ -43,8 +52,15 @@ public class WebSocketFlowTest {
     public void testToxicMessageFlow() {
         // Send toxic messages and verify warnings
         for (int i = 1; i <= 5; i++) {
+            String expectedAlert = i < 5 ? 
+                String.format("⚠ Warning %d/5: This message contains inappropriate content.", i) :
+                "⚠ Warning 5/5: This message contains inappropriate content.";
+            
+            when(chatMonitorServiceMock.checkMessage(testUserId, "You are a complete idiot"))
+                .thenReturn(List.of(expectedAlert));
+            
             List<String> alerts = chatMonitorService.checkMessage(
-                testUserId, testUsername, "You are a complete idiot", testLocation
+                testUserId, "You are a complete idiot"
             );
 
             // Verify warning message
@@ -64,14 +80,24 @@ public class WebSocketFlowTest {
     public void testBlockingFlow() {
         // First send 5 warnings
         for (int i = 1; i <= 5; i++) {
+            String expectedAlert = i < 5 ? 
+                String.format("⚠ Warning %d/5: This message contains inappropriate content.", i) :
+                "⚠ Warning 5/5: This message contains inappropriate content.";
+            
+            when(chatMonitorServiceMock.checkMessage(testUserId, "You are a complete idiot"))
+                .thenReturn(List.of(expectedAlert));
+            
             chatMonitorService.checkMessage(
-                testUserId, testUsername, "You are a complete idiot", testLocation
+                testUserId, "You are a complete idiot"
             );
         }
 
         // Send another toxic message
+        when(chatMonitorServiceMock.checkMessage(testUserId, "You are a complete idiot"))
+            .thenReturn(List.of("❌ You have been temporarily blocked for 24 hours due to continued inappropriate behavior."));
+        
         List<String> alerts = chatMonitorService.checkMessage(
-            testUserId, testUsername, "You are a complete idiot", testLocation
+            testUserId, "You are a complete idiot"
         );
 
         // Verify blocking message

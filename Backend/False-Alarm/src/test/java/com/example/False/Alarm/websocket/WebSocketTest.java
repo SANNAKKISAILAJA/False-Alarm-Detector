@@ -38,15 +38,14 @@ public class WebSocketTest {
         String userId = "test-user";
         String username = "Test User";
         String message = "Hello, how are you?";
-        String location = "123.456,789.012";
         
         // Mock ChatMonitorService response
-        when(chatMonitorService.checkMessage(userId, username, message, location))
+        when(chatMonitorService.checkMessage(userId, message))
             .thenReturn(List.of("✔ Message accepted."));
         
         // Create WebSocket message
-        String jsonMessage = String.format("{\"userId\":\"%s\",\"message\":\"%s\",\"username\":\"%s\",\"location\":\"%s\"}",
-            userId, message, username, location);
+        String jsonMessage = String.format("{\"userId\":\"%s\",\"message\":\"%s\",\"username\":\"%s\"}",
+            userId, message, username);
         TextMessage textMessage = new TextMessage(jsonMessage);
         
         // Process message
@@ -54,8 +53,8 @@ public class WebSocketTest {
         
         // Verify message was accepted
         verify(session).sendMessage(new TextMessage("✔ Message accepted."));
-        verify(chatMonitorService).checkMessage(userId, username, message, location);
-        verify(chatMonitorService, never()).isBlocked(any());
+        verify(chatMonitorService).checkMessage(userId, message);
+        verify(chatMonitorService).isBlocked(userId);
     }
 
     @Test
@@ -64,15 +63,14 @@ public class WebSocketTest {
         String userId = "test-user";
         String username = "Test User";
         String message = "You are a complete idiot";
-        String location = "123.456,789.012";
         
         // Mock ChatMonitorService response
-        when(chatMonitorService.checkMessage(userId, username, message, location))
+        when(chatMonitorService.checkMessage(userId, message))
             .thenReturn(List.of("⚠ Warning 1/5: This message contains inappropriate content."));
         
         // Create WebSocket message
-        String jsonMessage = String.format("{\"userId\":\"%s\",\"message\":\"%s\",\"username\":\"%s\",\"location\":\"%s\"}",
-            userId, message, username, location);
+        String jsonMessage = String.format("{\"userId\":\"%s\",\"message\":\"%s\",\"username\":\"%s\"}",
+            userId, message, username);
         TextMessage textMessage = new TextMessage(jsonMessage);
         
         // Process message
@@ -80,8 +78,8 @@ public class WebSocketTest {
         
         // Verify warning was sent
         verify(session).sendMessage(new TextMessage("⚠ Warning 1/5: This message contains inappropriate content."));
-        verify(chatMonitorService).checkMessage(userId, username, message, location);
-        verify(chatMonitorService, never()).isBlocked(any());
+        verify(chatMonitorService).checkMessage(userId, message);
+        verify(chatMonitorService).isBlocked(userId);
     }
 
     @Test
@@ -90,24 +88,23 @@ public class WebSocketTest {
         String userId = "test-user";
         String username = "Test User";
         String message = "You are a complete idiot";
-        String location = "123.456,789.012";
         
         // Mock ChatMonitorService response
-        when(chatMonitorService.checkMessage(userId, username, message, location))
+        when(chatMonitorService.checkMessage(userId, message))
             .thenReturn(List.of("❌ You have been temporarily blocked for 24 hours due to continued inappropriate behavior."));
         when(chatMonitorService.isBlocked(userId)).thenReturn(true);
         
         // Create WebSocket message
-        String jsonMessage = String.format("{\"userId\":\"%s\",\"message\":\"%s\",\"username\":\"%s\",\"location\":\"%s\"}",
-            userId, message, username, location);
+        String jsonMessage = String.format("{\"userId\":\"%s\",\"message\":\"%s\",\"username\":\"%s\"}",
+            userId, message, username);
         TextMessage textMessage = new TextMessage(jsonMessage);
         
         // Process message
         webSocketHandler.handleTextMessage(session, textMessage);
         
-        // Verify block message was sent
-        verify(session).sendMessage(new TextMessage("❌ You have been temporarily blocked for 24 hours due to continued inappropriate behavior."));
-        verify(chatMonitorService).checkMessage(userId, username, message, location);
+        // Verify blocked message was sent
+        verify(session).sendMessage(new TextMessage("❌ You are currently blocked. Please contact admin for assistance."));
+        verify(chatMonitorService).checkMessage(userId, message);
         verify(chatMonitorService).isBlocked(userId);
     }
 }

@@ -25,7 +25,7 @@ public class DynamicChatTest {
             // Get initial user information
             String userId = InputHandler.getUserId();
             String username = InputHandler.getUsername();
-            String location = InputHandler.getLocation();
+
 
             // Main loop for sending messages
             while (true) {
@@ -38,7 +38,7 @@ public class DynamicChatTest {
                 
                 // Process message through chat monitor
                 List<String> alerts = chatMonitorService.checkMessage(
-                    userId, username, message, location
+                    userId, message
                 );
                 
                 // Display alerts
