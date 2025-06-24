@@ -1,30 +1,32 @@
 package com.example.False.Alarm.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDateTime;
+
 @Entity
-@Data
+@Table(name = "chat_message")
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChatMessage{
-        @Id
-        @GeneratedValue(strategy = GenerationType.UUID)
-        String id;
+public class ChatMessage {
 
-        String otherEndUserId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
 
-        String messageText;
+    String userId;
+    String message;
+    String receiverId;
+    String username;
+    LocalDateTime time;
 
-        LocalDateTime time;
-
-        @ManyToOne
-        @JoinColumn(name = "conversation_id")
-        @JsonBackReference
-        Conversation conversation;
+    @ManyToOne
+    @JoinColumn(name = "conversation_id")
+    Conversation conversation;
 }
+	

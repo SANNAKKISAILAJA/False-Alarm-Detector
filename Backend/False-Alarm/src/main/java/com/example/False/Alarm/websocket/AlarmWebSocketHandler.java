@@ -1,14 +1,16 @@
 package com.example.False.Alarm.websocket;
 
-import java.util.Map;
 import java.util.List;
+import java.time.LocalDateTime;
 import com.example.False.Alarm.service.ChatMonitorService;
+import com.example.False.Alarm.dto.WebSocketMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.socket.CloseStatus;
 
 public class AlarmWebSocketHandler extends TextWebSocketHandler {
 
@@ -28,28 +30,24 @@ public class AlarmWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
-            // Parse incoming message
-            ChatMessageDTO chatMessage = objectMapper.readValue(message.getPayload(), ChatMessageDTO.class);
-            String userId = chatMessage.getUserId();
-            String messageContent = chatMessage.getMessage();
-            String username = chatMessage.getUsername();
-            String location = chatMessage.getLocation();
+            WebSocketMessage wsMessage = objectMapper.readValue(message.getPayload(), WebSocketMessage.class);
+            String userId = wsMessage.getUserId();
+            String messageContent = wsMessage.getMessage();
+            String username = wsMessage.getUsername();
+            LocalDateTime time = wsMessage.getTime();
 
-            // Check message with ChatMonitorService
-            List<String> alerts = chatMonitorService.checkMessage(userId, username, messageContent, location);
+            if (chatMonitorService.isBlocked(userId)) {
+                session.sendMessage(new TextMessage("❌ You are currently blocked. Please contact admin for assistance."));
+                return;
+            }
 
-            // Send alerts to client
+            List<String> alerts = chatMonitorService.checkMessage(userId, messageContent);
+
             for (String alert : alerts) {
                 session.sendMessage(new TextMessage(alert));
             }
 
-            // If user is blocked, request location
-            if (chatMonitorService.isBlocked(userId)) {
-                String locationRequestJson = objectMapper.writeValueAsString(
-                    Map.of("type", "locationRequest", "userId", userId)
-                );
-                session.sendMessage(new TextMessage(locationRequestJson));
-            }
+            logger.info("Message received from {}: {}", username, messageContent);
         } catch (Exception e) {
             logger.error("Error processing WebSocket message: {}", e.getMessage(), e);
             session.sendMessage(new TextMessage("Error processing message. Please try again."));
@@ -57,20 +55,7 @@ public class AlarmWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) throws Exception {
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         logger.info("WebSocket closed: {} with status: {}", session.getId(), status);
-    }
-
-    private static class ChatMessageDTO {
-        private String userId;
-        private String message;
-        private String username;
-        private String location;
-
-        // Getters and setters
-        public String getUserId() { return userId; }
-        public String getMessage() { return message; }
-        public String getUsername() { return username; }
-        public String getLocation() { return location; }
     }
 }

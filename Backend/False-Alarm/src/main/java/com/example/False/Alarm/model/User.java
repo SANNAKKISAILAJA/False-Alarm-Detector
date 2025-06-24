@@ -7,72 +7,131 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Entity
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Getter
-@Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    @Column(name = "id")
+    private Integer id;
 
-    @Column(length = 30)
+    public Integer getId() {
+        return id;
+    }
+
+    @Column(name = "createdOn")
+    @CreationTimestamp
+    private LocalDateTime createdOn;
+
+    @Column(name = "userId", length = 30, nullable = false, unique = true)
+    private String userId;
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "userType", length = 25, nullable = false)
+    private UserType userType;
+
+    public UserType getUserType() {
+        return userType;
+    }
+
+    public void setUserType(UserType userType) {
+        this.userType = userType;
+    }
+
+    @Column(name = "username", length = 30)
     String username;
 
-    @Column(length = 30, unique = true, nullable = false)
-    String userId;
+    @Column(name = "email", length = 50, nullable = false, unique = true)
+    private String email;
 
-    @Column(unique = true, length = 50)
-    String email;
+    public String getEmail() {
+        return email;
+    }
 
-    String password;
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    String authorities;     //ADMIN, USER
+    @Column(name = "password", length = 100, nullable = false)
+    private String password;
 
-    @Enumerated(value = EnumType.STRING)
-    UserType userType; //ADMIN, USER
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-    @Column(length = 512)
-    String profilePicUrl;
-
-    @Column(length = 100)
-    String location; 
-
-    @OneToMany(mappedBy = "sender")
-    @JsonIgnore
-    List<Match> sentMatches;
-
-    @OneToMany(mappedBy = "receiver")
-    @JsonIgnore
-    List<Match> receivedMatches;
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "observationStatus", nullable = false)
     @Builder.Default
-    Boolean isEnabled = false;
+    private ObservationStatus observationStatus = ObservationStatus.NOT_OBSERVED;
 
-    @Enumerated(value = EnumType.STRING)
-    ObservationStatus observationStatus;
+    @Column(name = "authorities", length = 25)
+    private String authorities;
 
-    @CreationTimestamp
-    Date createdOn;
+    @Column(name = "warningCount", nullable = false)
+    @Builder.Default
+    Integer warningCount = 0;
 
-    @UpdateTimestamp
-    Date updatedOn;
+    @Column(name = "blockUntil")
+    private LocalDateTime blockUntil;
+
+    @Column(name = "unblockRequested", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private boolean unblockRequested = false;
+
+    public boolean isUnblockRequested() {
+        return unblockRequested;
+    }
+
+    public void setUnblockRequested(boolean unblockRequested) {
+        this.unblockRequested = unblockRequested;
+    }
+
+    @Column(name = "flaggedMessages", length = 1000)
+    @Builder.Default
+    private String flaggedMessages = "";
+
+    @Column(name = "flaggedTerms", length = 1000)
+    @Builder.Default
+    private String flaggedTerms = "";
+
+    @Column(name = "isEnabled", columnDefinition = "BOOLEAN DEFAULT TRUE")
+    @Builder.Default
+    private boolean isEnabled = true;
+
+    public void setEnabled(boolean enabled) {
+        this.isEnabled = enabled;
+    }
+
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @Builder.Default
+    private List<Match> sentMatches = new ArrayList<>();
+
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @Builder.Default
+    private List<Match> receivedMatches = new ArrayList<>();
 
     @Override
     public String getUsername() {
@@ -80,10 +139,94 @@ public class User implements UserDetails {
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities(){
-        return Arrays.stream(authorities.split(","))
-                .map(authority -> new SimpleGrantedAuthority(authority))
-                .collect(Collectors.toList());
+    public String getPassword() {
+        return password;
     }
 
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (authorities != null && !authorities.isEmpty()) {
+            return List.of(new SimpleGrantedAuthority(authorities));
+        }
+        return List.of();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    public ObservationStatus getObservationStatus() {
+        return observationStatus;
+    }
+
+    public void setObservationStatus(ObservationStatus status) {
+        this.observationStatus = status;
+    }
+
+    public static boolean isObserved(ObservationStatus status) {
+        return status == ObservationStatus.OBSERVED ||
+               status == ObservationStatus.UNDER_ADMIN_WATCH ||
+               status == ObservationStatus.BLOCKED ||
+               status == ObservationStatus.BLOCKED_REQUESTED_UNBLOCK;
+    }
+
+    public LocalDateTime getBlockUntil() {
+        return blockUntil;
+    }
+
+    public void setBlockUntil(LocalDateTime blockUntil) {
+        this.blockUntil = blockUntil;
+    }
+
+    public Integer getWarningCount() {
+        return warningCount;
+    }
+
+    public void setWarningCount(Integer warningCount) {
+        this.warningCount = warningCount;
+    }
+
+    public String getFlaggedMessages() {
+        return flaggedMessages;
+    }
+
+    public void setFlaggedMessages(String flaggedMessages) {
+        this.flaggedMessages = flaggedMessages;
+    }
+
+    public String getFlaggedTerms() {
+        return flaggedTerms;
+    }
+
+    public void setFlaggedTerms(String flaggedTerms) {
+        this.flaggedTerms = flaggedTerms;
+    }
+
+    @Column(name = "adminWatchCount")
+    @Builder.Default
+    private Integer adminWatchCount = 0;
+
+    public Integer getAdminWatchCount() {
+        return adminWatchCount;
+    }
+
+    public void setAdminWatchCount(Integer adminWatchCount) {
+        this.adminWatchCount = adminWatchCount;
+    }
 }
