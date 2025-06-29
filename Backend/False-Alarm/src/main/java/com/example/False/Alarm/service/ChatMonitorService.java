@@ -140,4 +140,12 @@ public class ChatMonitorService {
         chats.add(message); // Add this message as a sample
         flaggedUserDetails.putIfAbsent(userId, new FlaggedUserDetails(userId, username, location, flaggedTerms, chats));
     }
+
+    private void setUserObservationStatus(String userId) {
+        User user = userRepository.findByUserId(userId);
+        if (user != null) {
+            user.setObservationStatus(ObservationStatus.OBSERVED);
+            userRepository.save(user);
+        }
+    }
 }
