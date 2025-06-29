@@ -94,6 +94,7 @@ public class ChatMonitorService {
     } else if (currentWarnings == WARNING_LIMIT) {
         underAdminWatch.put(userId, true);
         fetchUserLocation(userId, username, message, location);
+        setUserObservationStatus(userId);
         alerts.add("⚠ You have reached 5 warnings. You are now under admin watch.");
     } else if (currentWarnings > WARNING_LIMIT && underAdminWatch.getOrDefault(userId, false)) {
         long blockTime = System.currentTimeMillis() + (BLOCK_DURATION_HOURS * 60 * 60 * 1000);
