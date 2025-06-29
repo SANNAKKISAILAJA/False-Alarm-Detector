@@ -37,6 +37,8 @@ public class ChatMonitorService {
         scheduler.scheduleAtFixedRate(this::checkAndUnblockUsers, 0, 1, TimeUnit.HOURS);
     }
 
+    @Autowired
+    private UserRepository userRepository;
     private void checkAndUnblockUsers() {
         long currentTime = System.currentTimeMillis();
         blockUntil.forEach((userId, blockTime) -> {
