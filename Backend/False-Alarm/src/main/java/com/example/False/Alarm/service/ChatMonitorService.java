@@ -3,6 +3,8 @@ package com.example.False.Alarm.service;
 import com.example.False.Alarm.enums.FlaggedTerms;
 import com.example.False.Alarm.enums.ObservationStatus;
 import com.example.False.Alarm.model.FlaggedUserDetails;
+import com.example.False.Alarm.model.User;
+import com.example.False.Alarm.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
