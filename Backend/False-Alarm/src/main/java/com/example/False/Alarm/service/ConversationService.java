@@ -18,12 +18,10 @@ public class ConversationService {
     }
 
     public Conversation addMessageToConversation(Conversation conversation, ChatMessage chatMessage) {
-        ChatMessage messageWithTime = ChatMessage.builder()
-                .messageText(chatMessage.getMessageText())
-                .otherEndUserId(chatMessage.getOtherEndUserId())
-                .time(LocalDateTime.now())
-                .conversation(conversation)
-                .build();
+        ChatMessage messageWithTime = new ChatMessage();
+messageWithTime.setMessage(chatMessage.getMessage());
+messageWithTime.setReceiverId(chatMessage.getReceiverId());
+messageWithTime.setTime(LocalDateTime.now());
 
         conversation.getMessages().add(messageWithTime);
         return conversationRepository.save(conversation);

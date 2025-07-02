@@ -22,10 +22,6 @@ public class InputHandler {
         return getUserInput("Enter message:");
     }
     
-    public static String getLocation() {
-        return getUserInput("Enter location (latitude,longitude):");
-    }
-    
     public static void printAlert(String alert) {
         System.out.println("Alert: " + alert);
     }

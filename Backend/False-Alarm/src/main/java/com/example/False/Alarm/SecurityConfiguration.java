@@ -3,17 +3,19 @@ package com.example.False.Alarm;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import static org.springframework.security.config.Customizer.withDefaults;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfiguration {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -22,13 +24,17 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/users/admin").hasAuthority("ADMIN")
                 .requestMatchers("/users/chat/**", "/users/search").hasAuthority("USER")
+                .requestMatchers("/ws/**").permitAll()
                 .anyRequest().permitAll()
             )
             .oauth2Login(oauth2 -> oauth2
-                .defaultSuccessUrl("/login-success", true)
+                .loginPage("/login")
+                .defaultSuccessUrl("/", true)
+                .permitAll()
             )
-            .formLogin(withDefaults())
-            .httpBasic(withDefaults())
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+            )
             .csrf(csrf -> csrf.disable());
             
         return http.build();

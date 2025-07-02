@@ -4,7 +4,6 @@ public class ChatMessageDTO {
     private String userId;
     private String username;
     private String message;
-    private String location;
 
     public String getUserId() {
         return userId;
@@ -28,13 +27,5 @@ public class ChatMessageDTO {
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
     }
 }

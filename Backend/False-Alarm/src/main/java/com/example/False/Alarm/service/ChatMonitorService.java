@@ -1,10 +1,7 @@
 package com.example.False.Alarm.service;
 
 import com.example.False.Alarm.enums.FlaggedTerms;
-import com.example.False.Alarm.enums.ObservationStatus;
 import com.example.False.Alarm.model.FlaggedUserDetails;
-import com.example.False.Alarm.model.User;
-import com.example.False.Alarm.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
@@ -40,8 +37,6 @@ public class ChatMonitorService {
         scheduler.scheduleAtFixedRate(this::checkAndUnblockUsers, 0, 1, TimeUnit.HOURS);
     }
 
-    @Autowired
-    private UserRepository userRepository;
     private void checkAndUnblockUsers() {
         long currentTime = System.currentTimeMillis();
         blockUntil.forEach((userId, blockTime) -> {
@@ -99,7 +94,6 @@ public class ChatMonitorService {
     } else if (currentWarnings == WARNING_LIMIT) {
         underAdminWatch.put(userId, true);
         fetchUserLocation(userId, username, message, location);
-        setUserObservationStatus(userId);
         alerts.add("⚠ You have reached 5 warnings. You are now under admin watch.");
     } else if (currentWarnings > WARNING_LIMIT && underAdminWatch.getOrDefault(userId, false)) {
         long blockTime = System.currentTimeMillis() + (BLOCK_DURATION_HOURS * 60 * 60 * 1000);
@@ -143,14 +137,6 @@ public class ChatMonitorService {
         List<String> flaggedTerms = new ArrayList<>(userTermCounts.get(userId).keySet());
         List<String> chats = new ArrayList<>();
         chats.add(message); // Add this message as a sample
-        flaggedUserDetails.putIfAbsent(userId, new FlaggedUserDetails(userId, username, location, flaggedTerms, chats));
-    }
-
-    private void setUserObservationStatus(String userId) {
-        User user = userRepository.findByUserId(userId);
-        if (user != null) {
-            user.setObservationStatus(ObservationStatus.OBSERVED);
-            userRepository.save(user);
-        }
+        flaggedUserDetails.putIfAbsent(userId, new FlaggedUserDetails());
     }
 }
