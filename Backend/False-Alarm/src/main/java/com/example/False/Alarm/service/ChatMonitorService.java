@@ -1,157 +1,142 @@
-    package com.example.False.Alarm.service;
+package com.example.False.Alarm.service;
 
-import com.example.False.Alarm.enums.ObservationStatus;
-import com.example.False.Alarm.model.User;
-import com.example.False.Alarm.repository.UserRepository;
-import com.example.False.Alarm.service.AIService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.False.Alarm.enums.FlaggedTerms;
+import com.example.False.Alarm.model.FlaggedUserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ChatMonitorService {
+    private static final Logger logger = LoggerFactory.getLogger(ChatMonitorService.class);
+    private static final int WARNING_LIMIT = 5;
+    private static final int BLOCK_DURATION_HOURS = 24; // Block duration in hours
+
+    private final Map<String, Map<String, Integer>> userTermCounts = new ConcurrentHashMap<>();
+    private final Map<String, Integer> totalWarnings = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> underAdminWatch = new ConcurrentHashMap<>();
+    private final Map<String, Long> blockUntil = new ConcurrentHashMap<>(); // Timestamp when block ends
+    private final Map<String, FlaggedUserDetails> flaggedUserDetails = new ConcurrentHashMap<>();
+    
+    private final AIService aiService;
+    private final ScheduledExecutorService scheduler;
 
     @Autowired
-    private UserRepository userRepository;
+    public ChatMonitorService(AIService aiService) {
+        this.aiService = aiService;
+        this.scheduler = new ScheduledThreadPoolExecutor(1);
+        
+        // Start a background task to check and unblock users
+        scheduler.scheduleAtFixedRate(this::checkAndUnblockUsers, 0, 1, TimeUnit.HOURS);
+    }
 
-    @Autowired
-    private AIService aiService;
-
-    public void handleToxicMessage(String userId, String message) {
-        User user = userRepository.findByUserId(userId).orElse(null);
-        if (user == null) {
-            System.out.println("User not found for ID: " + userId);
-            return;
-        }
-
-        boolean isToxic = aiService.isMessageToxic(message);
-
-        if (!isToxic) return;
-
-        switch (user.getObservationStatus()) {
-            case NOT_OBSERVED -> {
-                user.setObservationStatus(ObservationStatus.OBSERVED);
-                handleWarning(user);
+    private void checkAndUnblockUsers() {
+        long currentTime = System.currentTimeMillis();
+        blockUntil.forEach((userId, blockTime) -> {
+            if (currentTime > blockTime) {
+                blockUntil.remove(userId);
+                logger.info("User {} has been automatically unblocked", userId);
             }
-            case OBSERVED -> handleWarning(user);
-            case UNDER_ADMIN_WATCH -> handleAdminWatch(user);
-            case BLOCKED, BLOCKED_REQUESTED_UNBLOCK -> System.out.println("User already blocked: " + user.getUsername());
-            default -> System.out.println("Unhandled status: " + user.getObservationStatus());
-        }
-
-        userRepository.save(user);
+        });
     }
 
-    private void handleWarning(User user) {
-        int warnings = user.getWarningCount() + 1;
-        user.setWarningCount(warnings);
-        System.out.println("Warning " + warnings + "/5 issued to: " + user.getUsername());
-        if (warnings >= 5) {
-            user.setObservationStatus(ObservationStatus.UNDER_ADMIN_WATCH);
-            user.setWarningCount(0);
-            user.setAdminWatchCount(0);
-            System.out.println("User moved to UNDER_ADMIN_WATCH: " + user.getUsername());
-        }
-    }
+    public List<String> checkMessage(String userId, String username, String message, String location) {
+        List<String> alerts = new ArrayList<>();
+        String messageLower = message.toLowerCase();
 
-    private void handleAdminWatch(User user) {
-        int adminCount = user.getAdminWatchCount() + 1;
-        user.setAdminWatchCount(adminCount);
+        userTermCounts.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+        totalWarnings.putIfAbsent(userId, 0);
+        underAdminWatch.putIfAbsent(userId, false);
 
-        if (adminCount >= 2) {
-            user.setObservationStatus(ObservationStatus.BLOCKED);
-            user.setBlockUntil(LocalDateTime.now().plusHours(24));
-            user.setAdminWatchCount(0); // Resets after blocking
-            System.out.println("User BLOCKED for 24 hrs: " + user.getUsername());
-        } else {
-            System.out.println("AdminWatch violation " + adminCount + "/2 for: " + user.getUsername());
-        }
-    }
-
-    public List<User> getBlockedUsers() {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getObservationStatus() == ObservationStatus.BLOCKED)
-                .toList();
-    }
-
-    public List<String> checkMessage(String userId, String message) {
-        List<String> alerts = new java.util.ArrayList<>();
-        User user = userRepository.findByUserId(userId).orElse(null);
-        if (user == null) {
-            alerts.add("User not found for ID: " + userId);
+        // Check if user is currently blocked
+        if (isBlocked(userId)) {
+            long remainingTime = (blockUntil.get(userId) - System.currentTimeMillis()) / (1000 * 60);
+            alerts.add(String.format("❌ You are temporarily blocked. Please wait %d minutes before trying again.", remainingTime));
             return alerts;
         }
-        boolean isToxic = aiService.isMessageToxic(message);
-        if (!isToxic) {
-            alerts.add("Message is safe.");
-            return alerts;
+
+        // AI check
+        try {
+            if (aiService.isMessageToxic(message)) {
+                handleToxicMessage(userId, username, message, location, alerts);
+                return alerts;
+            }
+        } catch (Exception e) {
+            logger.warn("AI service check failed, falling back to basic checks", e);
         }
-        switch (user.getObservationStatus()) {
-            case NOT_OBSERVED -> {
-                user.setObservationStatus(ObservationStatus.OBSERVED);
-                user.setWarningCount(1);
-                alerts.add("⚠ Warning 1/5: This message contains inappropriate content. You are now under observation.");
+
+        // Basic term check
+        for (String term : FlaggedTerms.getAllTerms()) {
+            if (messageLower.contains(term)) {
+                handleToxicMessage(userId, username, message, location, alerts);
+                break;
             }
-            case OBSERVED -> {
-                int warnings = user.getWarningCount() + 1;
-                user.setWarningCount(warnings);
-                alerts.add("⚠ Warning " + warnings + "/5: This message contains inappropriate content.");
-                if (warnings >= 5) {
-                    user.setObservationStatus(ObservationStatus.UNDER_ADMIN_WATCH);
-                    user.setWarningCount(0);
-                    user.setAdminWatchCount(0);
-                    alerts.add("🔍 User is under admin watch. Warnings reset. Admin watch cycle started.");
-                }
-            }
-            case UNDER_ADMIN_WATCH -> {
-                int adminCount = user.getAdminWatchCount() + 1;
-                user.setAdminWatchCount(adminCount);
-                alerts.add("⚠ Admin Watch Offense " + adminCount + "/2: This message contains inappropriate content.");
-                if (adminCount >= 2) {
-                    user.setObservationStatus(ObservationStatus.BLOCKED);
-                    user.setBlockUntil(java.time.LocalDateTime.now().plusHours(24));
-                    user.setWarningCount(0);
-                    user.setAdminWatchCount(0);
-                    alerts.add("⛔ User is BLOCKED for 24 hours.");
-                }
-            }
-            case BLOCKED, BLOCKED_REQUESTED_UNBLOCK -> alerts.add("⛔ User is already blocked.");
         }
-        userRepository.save(user);
-        return alerts;
+
+        return alerts.isEmpty() ? List.of("✔ Message accepted.") : alerts;
+    }
+
+    private void handleToxicMessage(String userId, String username, String message, String location, List<String> alerts) {
+        Map<String, Integer> termCounts = userTermCounts.get(userId);
+        int currentWarnings = totalWarnings.get(userId) + 1; // Increment once
+        totalWarnings.put(userId, currentWarnings);          // Update map
+
+        if (currentWarnings < WARNING_LIMIT) {
+            alerts.add(String.format("⚠ Warning %d/%d: This message contains inappropriate content.",
+            currentWarnings, WARNING_LIMIT));
+    } else if (currentWarnings == WARNING_LIMIT) {
+        underAdminWatch.put(userId, true);
+        fetchUserLocation(userId, username, message, location);
+        alerts.add("⚠ You have reached 5 warnings. You are now under admin watch.");
+    } else if (currentWarnings > WARNING_LIMIT && underAdminWatch.getOrDefault(userId, false)) {
+        long blockTime = System.currentTimeMillis() + (BLOCK_DURATION_HOURS * 60 * 60 * 1000);
+        blockUntil.put(userId, blockTime);
+        alerts.add("❌ You have been temporarily blocked for 24 hours due to continued inappropriate behavior.");
+    }
+}
+
+
+    public String resetCounts(String userId) {
+        userTermCounts.remove(userId);
+        totalWarnings.remove(userId);
+        underAdminWatch.remove(userId);
+        blockUntil.remove(userId);
+        return "User state reset";
     }
 
     public boolean isBlocked(String userId) {
-        User user = userRepository.findByUserId(userId).orElse(null);
-        return user != null && user.getObservationStatus() == ObservationStatus.BLOCKED;
+        return blockUntil.containsKey(userId);
+    }
+
+    public List<FlaggedUserDetails> getFlaggedUsers() {
+        return new ArrayList<>(flaggedUserDetails.values());
     }
 
     public boolean isAdminWatch(String userId) {
-        User user = userRepository.findByUserId(userId).orElse(null);
-        return user != null && user.getObservationStatus() == ObservationStatus.UNDER_ADMIN_WATCH;
+        return underAdminWatch.getOrDefault(userId, false);
     }
 
     public int getTotalWarnings(String userId) {
-        User user = userRepository.findByUserId(userId).orElse(null);
-        return user != null ? user.getWarningCount() : 0;
+        Integer warnings = totalWarnings.get(userId);
+        return (warnings != null) ? warnings : 0;
     }
 
-    public String resetCounts(String userId) {
-        User user = userRepository.findByUserId(userId).orElse(null);
-        if (user == null) return "User not found.";
-        user.setWarningCount(0);
-        user.setAdminWatchCount(0);
-        user.setObservationStatus(ObservationStatus.OBSERVED);
-        userRepository.save(user);
-        return "User warning and admin watch counts reset.";
+    public Map<String, Long> getBlockedUsers() {
+        return new HashMap<>(blockUntil);
     }
 
-    public java.util.List<User> getFlaggedUsers() {
-        return userRepository.findAll().stream()
-            .filter(u -> u.getObservationStatus() == ObservationStatus.UNDER_ADMIN_WATCH ||
-                         u.getObservationStatus() == ObservationStatus.BLOCKED)
-            .toList();
+    private void fetchUserLocation(String userId, String username, String message, String location) {
+        logger.info("Fetching location for user: " + userId);
+        List<String> flaggedTerms = new ArrayList<>(userTermCounts.get(userId).keySet());
+        List<String> chats = new ArrayList<>();
+        chats.add(message); // Add this message as a sample
+        flaggedUserDetails.putIfAbsent(userId, new FlaggedUserDetails());
     }
 }
