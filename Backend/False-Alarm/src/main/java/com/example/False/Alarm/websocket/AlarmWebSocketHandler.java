@@ -1,19 +1,20 @@
 package com.example.False.Alarm.websocket;
-
-import com.example.False.Alarm.model.User;
+import java.util.List;
+import java.time.LocalDateTime;
 import com.example.False.Alarm.service.ChatMonitorService;
-import com.example.False.Alarm.service.UserService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.False.Alarm.dto.WebSocketMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.socket.CloseStatus;
 
 import java.util.List;
 
-public class AlarmWebSocketHandler extends TextWebSocketHandler {
+    private static final Logger logger = LoggerFactory.getLogger(AlarmWebSocketHandler.class);
     private final ChatMonitorService chatMonitorService;
-    private final UserService userService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public AlarmWebSocketHandler(ChatMonitorService chatMonitorService, UserService userService) {
@@ -23,59 +24,34 @@ public class AlarmWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        System.out.println("WebSocket connected: " + session.getId());
+        logger.info("WebSocket connected: {}", session.getId());
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String userId;
+
         try {
-            // Option 1: Get userId from session (needs HandshakeInterceptor)
-            userId = (String) session.getAttributes().get("userId");
-            if (userId == null) {
-                // Option 2: Try to get userId from message payload
-                JsonNode json = objectMapper.readTree(message.getPayload());
-                if (json.has("userId")) {
-                    userId = json.get("userId").asText();
-                }
-            }
+            WebSocketMessage wsMessage = objectMapper.readValue(message.getPayload(), WebSocketMessage.class);
+            String userId = wsMessage.getUserId();
+            String messageContent = wsMessage.getMessage();
+            String username = wsMessage.getUsername();
+            LocalDateTime time = wsMessage.getTime();
 
-            if (userId == null) {
-                session.sendMessage(new TextMessage("Error: User ID not found"));
+            if (chatMonitorService.isBlocked(userId)) {
+                session.sendMessage(new TextMessage("❌ You are currently blocked. Please contact admin for assistance."));
                 return;
             }
 
-            User user = userService.getUserById(userId);
-            if (user == null) {
-                session.sendMessage(new TextMessage("Error: User not found"));
-                return;
-            }
-
-            String username = user.getUsername();
-            String userMessage = message.getPayload(); // or extract from JSON
-            String location = user.getLocation();
-
-            List<String> alerts = chatMonitorService.checkMessage(userId, username, userMessage, location);
+            List<String> alerts = chatMonitorService.checkMessage(userId, messageContent);
 
             for (String alert : alerts) {
                 session.sendMessage(new TextMessage(alert));
             }
-
-            if (chatMonitorService.isBlocked(userId)) {
-                String locationRequestJson = String.format(
-                        "{\"type\":\"locationRequest\",\"userId\":\"%s\"}",
-                        userId
-                );
-                session.sendMessage(new TextMessage(locationRequestJson));
-            }
-        } catch (Exception e) {
-            session.sendMessage(new TextMessage("Error: " + e.getMessage()));
-            e.printStackTrace();
         }
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) throws Exception {
-        System.out.println("WebSocket closed: " + session.getId());
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        logger.info("WebSocket closed: {} with status: {}", session.getId(), status);
     }
 }

@@ -1,5 +1,9 @@
 package com.example.False.Alarm.enums;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public enum FlaggedTerms {
     RAPE, MURDER, ROBBERY, KIDNAP, ASSAULT,
     TERRORIST, VIOLENCE, WEAPON, GUN, KNIFE,
@@ -10,12 +14,9 @@ public enum FlaggedTerms {
     MANSLAUGHTER, GENOCIDE, HATE_CRIME, RIOT, ARSON,
     BEHEAD, EXECUTE, SLAUGHTER, TERROR, HOSTAGE;
 
-    public static String[] getAllTerms() {
-        FlaggedTerms[] values = FlaggedTerms.values();
-        String[] terms = new String[values.length];
-        for (int i = 0; i < values.length; i++) {
-            terms[i] = values[i].name().replace("_", " ").toLowerCase();
-        }
-        return terms;
+    public static List<String> getAllTerms() {
+        return Arrays.stream(values())
+            .map(term -> term.name().replace("_", " ").toLowerCase())
+            .collect(Collectors.toList());
     }
 }

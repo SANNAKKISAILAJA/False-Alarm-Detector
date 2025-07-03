@@ -151,3 +151,21 @@ const chatRowsContainer = {
   justifyContent: "flex-start",
   padding: "10px 0",
 };
+
+const chatRow = {
+  height: 64,
+  display: "flex",
+  alignItems: "center",
+  paddingLeft: 32,
+  marginBottom: 16,
+  borderRadius: 16,
+  marginRight: 32,
+};
+
+const chatRowAvatar = {
+  width: 56,
+  height: 56,
+  borderRadius: "50%",
+  border: "2px solid #fff",
+};}
+
